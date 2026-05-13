@@ -110,12 +110,6 @@
 <script src="db.js"></script>
 <script src="nav.js"></script>
 <script src="profile.js"></script>
-<script>
-  // Navigare ierarhica: back -> home.html
-  history.pushState({ page: 'profile.html' }, '', location.href);
-  window.addEventListener('popstate', function() {
-    location.replace('home.html');
-  });
-</script>
+
 </body>
 </html>
