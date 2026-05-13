@@ -89,7 +89,7 @@ function initNav(activePage) {
   drawer.querySelectorAll('.nav-link').forEach(link => {
     link.addEventListener('click', () => {
       // Lasa browser-ul sa navigheze, doar inchide vizual
-      closeDrawer();
+      //closeDrawer();
     });
   });
 
