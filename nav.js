@@ -85,13 +85,7 @@ function initNav(activePage) {
   document.getElementById('nav-close').addEventListener('click', closeDrawer);
   overlay.addEventListener('click', closeDrawer);
 
-  // Inchide drawer-ul la navigare (click pe link)
-  drawer.querySelectorAll('.nav-link').forEach(link => {
-    link.addEventListener('click', () => {
-      // Lasa browser-ul sa navigheze, doar inchide vizual
-      //closeDrawer();
-    });
-  });
+
 
   // Inchide cu Escape
   document.addEventListener('keydown', (e) => {
