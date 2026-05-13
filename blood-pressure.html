@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tensiune — Health Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+<link rel="stylesheet" href="nav.css" />
+<link rel="stylesheet" href="style.css" />
+
+<style>
+  /* ─── Accordion rows ─── */
+  .bp-row-head { cursor: pointer; user-select: none; }
+  .bp-row-head:hover td { background: var(--surface2); }
+  .bp-row-head td { border-bottom: none !important; }
+
+  .bp-row-body { display: none; }
+  .bp-row-body.open { display: table-row; }
+  .bp-row-body td {
+    padding: 0 14px 12px 14px !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+
+  .bp-detail {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 12px;
+      border-radius: var(--radius);
+      margin-top: 8px;
+      text-align: center;
+  }
+
+  .bp-detail-item { display: flex; flex-direction: column; gap: 3px; }
+  .bp-detail-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); }
+  .bp-detail-value { font-size: 16px; font-weight: 600; }
+
+  .bp-row-head .expand-icon {
+    color: var(--text-dim); font-size: 14px;
+    transition: transform 0.2s;
+    display: inline-block;
+  }
+  .bp-row-head.expanded .expand-icon { transform: rotate(90deg); }
+</style>
+
+<link rel="manifest" href="manifest.json" />
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./service-worker.js');
+  }
+</script>
+</head>
+<body>
+<div class="app">
+  <main class="main">
+    <header>
+      <h1>Tensiune arterială</h1>
+      <p>Monitorizare sistolică · diastolică · puls</p>
+    </header>
+
+    <div class="cards-row">
+      <div class="stat-card">
+        <div class="stat-label">Sistolică medie</div>
+        <div class="stat-value blue" id="avg-sys">—</div>
+        <div class="stat-unit">mmHg</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Diastolică medie</div>
+        <div class="stat-value green" id="avg-dia">—</div>
+        <div class="stat-unit">mmHg</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Puls mediu</div>
+        <div class="stat-value amber" id="avg-puls">—</div>
+        <div class="stat-unit">bpm</div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title">Adaugă măsurătoare</div>
+      <div class="form-row">
+        <input type="date" id="inp-date" />
+        <input type="number" id="inp-sys" placeholder="Sistolică" min="60" max="250" />
+        <input type="number" id="inp-dia" placeholder="Diastolică" min="40" max="160" />
+        <input type="number" id="inp-puls" placeholder="Puls" min="30" max="220" />
+        <button class="btn-add" id="btn-add">+ Adaugă</button>
+      </div>
+      <div class="err-msg" id="err-msg"></div>
+    </div>
+
+    <div class="chart-section">
+      <div class="chart-header">
+        <div class="section-title">Evoluție</div>
+        <div class="legend">
+          <span><span class="leg-dot" style="background:#4e9eff"></span>Sistolică</span>
+          <span><span class="leg-dot" style="background:#34d399"></span>Diastolică</span>
+          <span><span class="leg-dot" style="background:#fbbf24"></span>Puls</span>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="bpChart" aria-label="Grafic evoluție tensiune arterială"></canvas>
+      </div>
+    </div>
+
+    <div class="table-section">
+      <div class="section-title" style="padding:0.9rem 1.25rem; border-bottom:1px solid var(--border);">Istoric</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th><th>Sistolică</th><th>Status</th><th></th><th></th>
+          </tr>
+        </thead>
+        <tbody id="tbl-body"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="db.js"></script>
+<script src="nav.js"></script>
+<script src="blood-pressure.js"></script>
+<script>
+  // Navigare ierarhica: back -> home.html
+  history.pushState({ page: 'blood-pressure.html' }, '', location.href);
+  window.addEventListener('popstate', function() {
+    location.replace('home.html');
+  });
+</script>
+</body>
+</html>

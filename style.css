@@ -1,0 +1,176 @@
+header { margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+header h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 4px; }
+header p { font-size: 13px; color: var(--text-muted); font-family: 'DM Mono', monospace; }
+
+.section-title {
+  font-size: 11px; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.07em;
+  font-family: 'DM Mono', monospace;
+}
+
+/* ─── Stat cards ─────────────────────────────────────────────────────────── */
+
+.cards-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 1rem 1.1rem;
+}
+
+.stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; font-family: 'DM Mono', monospace; }
+.stat-value { font-size: 28px; font-weight: 600; line-height: 1; margin-bottom: 4px; }
+.stat-value.blue  { color: var(--blue); }
+.stat-value.green { color: var(--green); }
+.stat-value.amber { color: var(--amber); }
+.stat-unit { font-size: 11px; color: var(--text-dim); font-family: 'DM Mono', monospace; }
+
+/* ─── Form ───────────────────────────────────────────────────────────────── */
+
+.form-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; margin-bottom: 1.5rem;
+}
+
+.form-section .section-title { margin-bottom: 12px; }
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr auto;
+  gap: 8px; align-items: center;
+}
+
+.form-row input {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text);
+  font-family: 'DM Mono', monospace; font-size: 13px;
+  padding: 8px 10px; width: 100%; transition: border-color 0.15s;
+}
+
+.form-row input:focus { outline: none; border-color: var(--border2); background: var(--surface3); }
+.form-row input::placeholder { color: var(--text-dim); }
+.form-row input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
+
+.btn-add {
+  background: var(--blue); color: #000; border: none;
+  border-radius: var(--radius); padding: 8px 18px;
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600;
+  cursor: pointer; white-space: nowrap; transition: opacity 0.15s, transform 0.1s;
+}
+
+.btn-add:hover  { opacity: 0.85; }
+.btn-add:active { transform: scale(0.97); }
+
+.err-msg { font-size: 12px; color: var(--red); margin-top: 8px; font-family: 'DM Mono', monospace; min-height: 16px; }
+
+/* ─── Chart ──────────────────────────────────────────────────────────────── */
+
+.chart-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 1.1rem 1.25rem 1.25rem; margin-bottom: 1.5rem;
+}
+
+.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+
+.legend { display: flex; gap: 14px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); flex-wrap: wrap; }
+.legend span { display: flex; align-items: center; gap: 5px; }
+.leg-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.chart-wrap { position: relative; height: 200px; }
+
+/* ─── Table ──────────────────────────────────────────────────────────────── */
+
+.table-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+}
+
+table { width: 100%; border-collapse: collapse; }
+
+thead th {
+  padding: 10px 14px; font-size: 11px; font-weight: 500;
+  color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em;
+  font-family: 'DM Mono', monospace; border-bottom: 1px solid var(--border); text-align: left;
+}
+
+tbody td {
+  padding: 11px 14px; font-size: 13px; border-bottom: 1px solid var(--border);
+  font-family: 'DM Mono', monospace; color: var(--text);
+}
+
+tbody tr:last-child td { border-bottom: none; }
+tbody tr { transition: background 0.1s; }
+tbody tr:hover td { background: var(--surface2); }
+
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; padding: 3px 9px; border-radius: 20px;
+  font-weight: 500; font-family: 'Syne', sans-serif;
+}
+.badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.badge-ok     { background: var(--green-dim); color: var(--green); border: 1px solid rgba(52,211,153,0.2); }
+.badge-warn   { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(251,191,36,0.2); }
+.badge-danger { background: var(--red-dim);   color: var(--red);   border: 1px solid rgba(248,113,113,0.2); }
+
+.btn-del {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-dim); font-size: 15px; padding: 2px 6px;
+  border-radius: 6px; transition: color 0.15s, background 0.15s; line-height: 1;
+}
+.btn-del:hover { color: var(--red); background: var(--red-dim); }
+
+.empty-row td { text-align: center; padding: 2.5rem; color: var(--text-dim); font-size: 13px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+
+  header { margin-bottom: 1.25rem; padding-bottom: 1rem; }
+  header h1 { font-size: 18px; }
+
+  /* Stat cards — 3 coloane mici pe mobil */
+  .cards-row { gap: 8px; }
+  .stat-value { font-size: 20px; }
+  .stat-card { padding: 0.75rem 0.875rem; }
+
+  /* Form — stivuit vertical */
+  .form-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  /* Butonul ocupa toata latimea */
+  .form-row .btn-add {
+    grid-column: span 2;
+    width: 100%;
+    padding: 10px;
+  }
+
+  /* Chart mai mic */
+  .chart-wrap { height: 160px; }
+
+  .chart-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+
+  /* Tabele — font mai mic, padding mai mic */
+  thead th { padding: 8px 10px; font-size: 10px; }
+  tbody td { padding: 9px 10px; font-size: 12px; }
+
+  /* Ascunde coloane mai putin importante pe mobil */
+  .hide-mobile { display: none; }
+
+  /* Form section padding mai mic */
+  .form-section { padding: 0.875rem 1rem; }
+  .chart-section { padding: 0.875rem 1rem 1rem; }
+
+  .form-bottom {
+    /* Schimbăm în 2 coloane pentru input-uri, butonul trece jos */
+    grid-template-columns: 1fr 1fr;
+  }
+
+  #btn-save {
+    /* Forțăm butonul să ocupe ambele coloane (tot rândul) */
+    grid-column: span 2;
+    width: 100%;
+    margin-top: 4px; /* Un pic de spațiu extra dacă e nevoie */
+  }
+}

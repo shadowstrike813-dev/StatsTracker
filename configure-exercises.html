@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Configurare exerciții — Health Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+<link rel="stylesheet" href="nav.css" />
+<link rel="stylesheet" href="style.css" />
+<style>
+  .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); text-decoration: none; margin-bottom: 1.25rem; transition: color 0.15s; font-family: 'DM Mono', monospace; }
+  .back-link:hover { color: var(--text); }
+
+  /* ─── Add form ─── */
+  .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field.full { grid-column: span 2; }
+  .field label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; font-family: 'DM Mono', monospace; }
+  .field input, .field select, .field textarea {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 13px;
+    padding: 8px 10px; width: 100%; transition: border-color 0.15s;
+    appearance: none;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--border2); background: var(--surface3); }
+  .field input::placeholder, .field textarea::placeholder { color: var(--text-dim); }
+  .field select option { background: var(--surface2); }
+  .field textarea { resize: vertical; min-height: 60px; }
+
+  .save-row { display: flex; align-items: center; gap: 12px; }
+  .btn-save {
+    background: var(--blue); color: #000; border: none;
+    border-radius: var(--radius); padding: 9px 20px;
+    font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn-save:hover { opacity: 0.85; }
+  .btn-save:active { transform: scale(0.97); }
+  .save-msg { font-size: 12px; font-family: 'DM Mono', monospace; }
+  .save-msg.ok  { color: var(--green); }
+  .save-msg.err { color: var(--red); }
+
+  /* ─── Exercise list with drag ─── */
+  .ex-list { display: flex; flex-direction: column; gap: 6px; }
+
+  .ex-item {
+    display: grid;
+    grid-template-columns: 28px 1fr auto auto auto;
+    align-items: center; gap: 10px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 12px;
+    transition: border-color 0.15s, background 0.15s, opacity 0.15s;
+    cursor: default;
+  }
+  .ex-item.inactive { opacity: 0.45; }
+  .ex-item.dragging { opacity: 0.3; border-style: dashed; }
+  .ex-item.drag-over { border-color: var(--blue); background: var(--blue-dim); }
+
+  .drag-handle { color: var(--text-dim); font-size: 16px; cursor: grab; display: flex; align-items: center; }
+  .drag-handle:active { cursor: grabbing; }
+
+  .ex-info { display: flex; flex-direction: column; gap: 3px; }
+  .ex-info-name { font-size: 13px; font-weight: 500; }
+  .ex-info-meta { font-size: 11px; color: var(--text-dim); font-family: 'DM Mono', monospace; }
+
+  .ex-group-badge {
+    font-size: 10px; font-family: 'DM Mono', monospace;
+    color: var(--text-dim); background: var(--surface3);
+    padding: 2px 8px; border-radius: 20px; white-space: nowrap;
+  }
+
+  .ex-item-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-dim); font-size: 16px; padding: 4px 6px;
+    border-radius: 6px; transition: color 0.15s, background 0.15s; line-height: 1;
+    display: flex; align-items: center;
+  }
+  .ex-item-btn:hover { color: var(--text); background: var(--surface2); }
+  .ex-item-btn.del:hover { color: var(--red); background: var(--red-dim); }
+
+  .empty-list { text-align: center; padding: 2rem; color: var(--text-dim); font-family: 'DM Mono', monospace; font-size: 13px; }
+
+  /* ─── Edit modal ─── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6); z-index: 200;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: var(--radius-lg); padding: 1.5rem;
+    width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto;
+  }
+  .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 1.25rem; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 1rem; }
+  .btn-cancel {
+    background: none; border: 1px solid var(--border2); border-radius: var(--radius);
+    padding: 8px 16px; color: var(--text-muted); font-family: 'Syne', sans-serif;
+    font-size: 13px; cursor: pointer; transition: background 0.15s;
+  }
+  .btn-cancel:hover { background: var(--surface2); }
+</style>
+
+<link rel="manifest" href="manifest.json" />
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./service-worker.js');
+  }
+</script>
+</head>
+<body>
+<div class="app">
+  <main class="main">
+    <a href="workout.html" class="back-link"><i class="ti ti-arrow-left"></i> Antrenament</a>
+
+    <header>
+      <h1>Configurare exerciții</h1>
+      <p>Adaugă, editează și reordonează exercițiile</p>
+    </header>
+
+    <!-- Add form -->
+    <div class="form-section" style="margin-bottom:1.5rem;">
+      <div class="section-title" style="margin-bottom:1rem;">Exercițiu nou</div>
+      <div class="profile-grid">
+        <div class="field">
+          <label>Nume *</label>
+          <input type="text" id="f-name" placeholder="ex: Bench Press" />
+        </div>
+        <div class="field">
+          <label>Grupă musculară</label>
+          <select id="f-group">
+            <option value="">— alege —</option>
+            <option>Piept</option>
+            <option>Spate</option>
+            <option>Umeri</option>
+            <option>Biceps</option>
+            <option>Triceps</option>
+            <option>Antebrat</option>
+            <option>Picioare</option>
+            <option>Core</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Tip</label>
+          <select id="f-type">
+            <option value="compound">Compus</option>
+            <option value="isolation">Izolat</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Echipament</label>
+          <select id="f-equipment">
+            <option value="">— alege —</option>
+            <option>Halteră</option>
+            <option>Ganteră</option>
+            <option>Cablu</option>
+            <option>Aparat</option>
+            <option>Greutate corporală</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Serii țintă</label>
+          <input type="number" id="f-sets" placeholder="ex: 4" min="1" max="20" />
+        </div>
+        <div class="field">
+          <label>Repetări țintă</label>
+          <input type="text" id="f-reps" placeholder="ex: 8-12" />
+        </div>
+        <div class="field">
+          <label>Greutate de start (kg)</label>
+          <input type="number" id="f-startkg" placeholder="ex: 60" min="0" step="0.5" />
+        </div>
+        <div class="field full">
+          <label>Descriere / note</label>
+          <textarea id="f-desc" placeholder="Instrucțiuni de execuție, grip, etc."></textarea>
+        </div>
+      </div>
+      <div class="save-row">
+        <button class="btn-save" id="btn-add-ex">+ Adaugă exercițiu</button>
+        <span class="save-msg" id="add-msg"></span>
+      </div>
+    </div>
+
+    <!-- Exercise list -->
+    <div class="table-section">
+      <div class="section-title" style="padding:0.9rem 1.25rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+        <span>Exerciții configurate</span>
+        <span style="font-size:11px; color:var(--text-dim);">trage pentru a reordona</span>
+      </div>
+      <div style="padding: 10px 10px;">
+        <div class="ex-list" id="ex-list">
+          <p class="empty-list">Se încarcă…</p>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Edit modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title">Editează exercițiu</div>
+    <div class="profile-grid">
+      <div class="field">
+        <label>Nume *</label>
+        <input type="text" id="e-name" />
+      </div>
+      <div class="field">
+        <label>Grupă musculară</label>
+        <select id="e-group">
+          <option value="">— alege —</option>
+          <option>Piept</option><option>Spate</option><option>Umeri</option>
+          <option>Biceps</option><option>Triceps</option><option>Antebrat</option>
+          <option>Picioare</option><option>Core</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Tip</label>
+        <select id="e-type">
+          <option value="compound">Compus</option>
+          <option value="isolation">Izolat</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Echipament</label>
+        <select id="e-equipment">
+          <option value="">— alege —</option>
+          <option>Halteră</option><option>Ganteră</option><option>Cablu</option>
+          <option>Aparat</option><option>Greutate corporală</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Serii țintă</label>
+        <input type="number" id="e-sets" min="1" max="20" />
+      </div>
+      <div class="field">
+        <label>Repetări țintă</label>
+        <input type="text" id="e-reps" />
+      </div>
+      <div class="field">
+        <label>Greutate de start (kg)</label>
+        <input type="number" id="e-startkg" min="0" step="0.5" />
+      </div>
+      <div class="field full">
+        <label>Activ</label>
+        <select id="e-active">
+          <option value="true">Da</option>
+          <option value="false">Nu</option>
+        </select>
+      </div>
+      <div class="field full">
+        <label>Descriere / note</label>
+        <textarea id="e-desc"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btn-cancel">Anulează</button>
+      <button class="btn-save" id="btn-save-edit">Salvează</button>
+    </div>
+    <div class="save-msg" id="edit-msg" style="margin-top:8px;"></div>
+  </div>
+</div>
+
+<script src="db.js"></script>
+<script src="nav.js"></script>
+<script src="configure-exercises.js"></script>
+<script>
+  // Navigare ierarhica: back -> workout.html
+  history.pushState({ page: 'configure-exercises.html' }, '', location.href);
+  window.addEventListener('popstate', function() {
+    location.replace('workout.html');
+  });
+</script>
+</body>
+</html>

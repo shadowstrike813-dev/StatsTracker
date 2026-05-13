@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Exercițiu — Health Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+<link rel="stylesheet" href="nav.css" />
+<link rel="stylesheet" href="style.css" />
+<style>
+  .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); text-decoration: none; margin-bottom: 1.25rem; transition: color 0.15s; font-family: 'DM Mono', monospace; }
+  .back-link:hover { color: var(--text); }
+
+  /* Sets builder */
+  .sets-builder { margin-bottom: 12px; }
+  .set-row { display: grid; grid-template-columns: 32px 1fr 1fr 28px 28px; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .set-row.set-warmup { opacity: 0.65; }
+  .set-row.set-warmup input { border-color: rgba(251,191,36,0.3); }
+  .set-num { font-size: 11px; color: var(--text-dim); font-family: 'DM Mono', monospace; text-align: center; }
+  .set-row input {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 13px;
+    padding: 7px 10px; width: 100%; transition: border-color 0.15s;
+  }
+  .set-row input:focus { outline: none; border-color: var(--border2); background: var(--surface3); }
+  .set-row input::placeholder { color: var(--text-dim); }
+  .btn-remove-set { background: none; border: none; cursor: pointer; color: var(--text-dim); font-size: 16px; padding: 4px; border-radius: 6px; transition: color 0.15s, background 0.15s; line-height: 1; }
+  .btn-remove-set:hover { color: var(--red); background: var(--red-dim); }
+  .btn-warmup-toggle { background: none; border: none; cursor: pointer; color: var(--text-dim); font-size: 15px; padding: 4px; border-radius: 6px; transition: color 0.15s, background 0.15s; line-height: 1; }
+  .btn-warmup-toggle:hover { color: var(--amber); background: var(--amber-dim); }
+  .btn-warmup-toggle.active { color: var(--amber); }
+  .set-warmup-row { opacity: 0.6; }
+
+  .sets-actions { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+  .btn-add-set { display: flex; align-items: center; gap: 5px; background: none; border: 1px dashed var(--border2); border-radius: var(--radius); padding: 6px 12px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-muted); cursor: pointer; transition: border-color 0.15s, color 0.15s; }
+  .btn-add-set:hover { border-color: var(--blue); color: var(--blue); }
+
+  .form-bottom { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; margin-top: 12px; }
+  .form-field { display: flex; flex-direction: column; gap: 5px; }
+  .form-field label { font-size: 11px; color: var(--text-muted); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.06em; }
+  .form-field input {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 13px;
+    padding: 7px 10px; width: 100%; transition: border-color 0.15s;
+  }
+  .form-field input:focus { outline: none; border-color: var(--border2); background: var(--surface3); }
+  .form-field input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
+
+  /* History */
+  .session-block { margin-bottom: 8px; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  .session-head {
+    display: grid; grid-template-columns: 1fr auto auto;
+    align-items: center; gap: 12px;
+    padding: 10px 14px; background: var(--surface2);
+    cursor: pointer; user-select: none;
+  }
+  .session-head:hover { background: var(--surface3); }
+  .session-date { font-size: 13px; font-weight: 500; font-family: 'DM Mono', monospace; }
+  .session-summary { font-size: 12px; color: var(--text-muted); font-family: 'DM Mono', monospace; }
+  .session-max { font-size: 13px; font-weight: 600; color: #a78bfa; }
+  .session-body { display: none; padding: 10px 14px; border-top: 1px solid var(--border); }
+  .session-body.open { display: block; }
+  .session-sets { font-size: 12px; font-family: 'DM Mono', monospace; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
+  .session-set-row { display: flex; justify-content: space-between; align-items: center; }
+  .session-set-row span { color: var(--text); }
+  .btn-del-session { background: none; border: none; cursor: pointer; color: var(--text-dim); font-size: 13px; padding: 2px 6px; border-radius: 6px; transition: color 0.15s, background 0.15s; margin-top: 8px; font-family: 'DM Mono', monospace; }
+  .btn-del-session:hover { color: var(--red); background: var(--red-dim); }
+</style>
+
+<link rel="manifest" href="manifest.json" />
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./service-worker.js');
+  }
+</script>
+</head>
+<body>
+<div class="app">
+  <main class="main">
+    <a href="workout.html" class="back-link"><i class="ti ti-arrow-left"></i> Antrenament</a>
+
+    <header>
+      <h1 id="ex-title">—</h1>
+      <p id="ex-meta">—</p>
+    </header>
+
+    <div class="cards-row">
+      <div class="stat-card">
+        <div class="stat-label">Maxim global</div>
+        <div class="stat-value" style="color:#a78bfa" id="stat-max">—</div>
+        <div class="stat-unit">kg</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Sesiuni totale</div>
+        <div class="stat-value blue" id="stat-sessions">—</div>
+        <div class="stat-unit">sesiuni</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Ultima sesiune</div>
+        <div class="stat-value green" id="stat-last">—</div>
+        <div class="stat-unit" id="stat-last-date">—</div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title" style="margin-bottom:12px;">Adaugă sesiune</div>
+      <div class="sets-builder" id="sets-builder"></div>
+      <div class="sets-actions">
+        <button class="btn-add-set" id="btn-add-set"><i class="ti ti-plus"></i> Serie nouă</button>
+      </div>
+      <div class="form-bottom">
+        <div class="form-field">
+          <label>Data</label>
+          <input type="date" id="inp-date" />
+        </div>
+        <div class="form-field">
+          <label>Note (opțional)</label>
+          <input type="text" id="inp-notes" placeholder="ex: obosit, formă bună..." />
+        </div>
+        <button class="btn-add" id="btn-save">Salvează sesiunea</button>
+      </div>
+      <div class="err-msg" id="err-msg"></div>
+    </div>
+
+    <div class="chart-section">
+      <div class="chart-header">
+        <div class="section-title">Progres — maxim per sesiune</div>
+        <div class="legend">
+          <span><span class="leg-dot" style="background:#a78bfa"></span>Maxim kg</span>
+          <span><span class="leg-dot" style="background:#4e9eff; border-radius:0; height:2px; width:16px;"></span>Volum</span>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="exChart"></canvas>
+      </div>
+    </div>
+
+    <div class="table-section">
+      <div class="section-title" style="padding:0.9rem 1.25rem; border-bottom:1px solid var(--border);">Istoric sesiuni</div>
+      <div id="history" style="padding: 8px 0;"></div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="db.js"></script>
+<script src="nav.js"></script>
+<script src="exercise.js"></script>
+<script>
+  // Navigare ierarhica: back -> workout.html
+  history.pushState({ page: 'exercise.html' }, '', location.href);
+  window.addEventListener('popstate', function() {
+    location.replace('workout.html');
+  });
+</script>
+</body>
+</html>

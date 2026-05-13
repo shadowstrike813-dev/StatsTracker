@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Profil — Health Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+<link rel="stylesheet" href="nav.css" />
+<link rel="stylesheet" href="style.css" />
+<style>
+  .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1.5rem; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field.full { grid-column: span 2; }
+  .field label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; font-family: 'DM Mono', monospace; }
+  .field input, .field textarea {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 13px;
+    padding: 8px 10px; width: 100%; transition: border-color 0.15s;
+  }
+  .field input:focus, .field textarea:focus { outline: none; border-color: var(--border2); background: var(--surface3); }
+  .field textarea { resize: vertical; min-height: 80px; }
+  .field input::placeholder, .field textarea::placeholder { color: var(--text-dim); }
+  .field input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
+  .age-hint { font-size: 12px; color: var(--text-muted); font-family: 'DM Mono', monospace; margin-top: 4px; }
+  .btn-save {
+    background: var(--blue); color: #000; border: none;
+    border-radius: var(--radius); padding: 10px 24px;
+    font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn-save:hover { opacity: 0.85; }
+  .btn-save:active { transform: scale(0.97); }
+  .save-row { display: flex; align-items: center; gap: 12px; }
+  .save-msg { font-size: 13px; font-family: 'DM Mono', monospace; }
+  .save-msg.ok { color: var(--green); }
+  .save-msg.err { color: var(--red); }
+</style>
+
+<link rel="manifest" href="manifest.json" />
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./service-worker.js');
+  }
+</script>
+</head>
+<body>
+<div class="app">
+  <main class="main">
+    <header>
+      <h1>Profil</h1>
+      <p>Informații personale și setări</p>
+    </header>
+
+    <div class="form-section">
+      <div class="section-title" style="margin-bottom:1rem;">Date personale</div>
+      <div class="profile-grid">
+        <div class="field">
+          <label for="p-name">Nume</label>
+          <input type="text" id="p-name" placeholder="Numele tău" />
+        </div>
+        <div class="field">
+          <label for="p-birthdate">Data nașterii</label>
+          <input type="text" id="p-birthdate" placeholder="zz.ll.aaaa" maxlength="10" autocomplete="off" inputmode="numeric" />
+          <span class="age-hint" id="age-hint"></span>
+        </div>
+        <div class="field">
+          <label for="p-height">Înălțime (cm)</label>
+          <input type="number" id="p-height" placeholder="ex: 185" min="50" max="250" />
+        </div>
+        <div class="field">
+          <label for="p-target">Greutate țintă (kg)</label>
+          <input type="number" id="p-target" placeholder="ex: 80" min="20" max="300" step="0.1" />
+        </div>
+        <div class="field full">
+          <label for="p-meds">Medicamente</label>
+          <input type="text" id="p-meds" placeholder="ex: Enalapril 10mg, Aspenter 75mg" />
+        </div>
+        <div class="field full">
+          <label for="p-desc">Descriere / note</label>
+          <textarea id="p-desc" placeholder="Orice informație relevantă despre sănătatea ta..."></textarea>
+        </div>
+      </div>
+
+
+      <div class="save-row">
+        <button class="btn-save" id="btn-save">Salvează profilul</button>
+        <span class="save-msg" id="save-msg"></span>
+      </div>
+
+      <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+        <div class="section-title" style="margin-bottom: 12px;">Date aplicație</div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+          <button class="btn-save" id="btn-export" style="background: var(--surface3); color: var(--text); border: 1px solid var(--border2);">
+            <i class="ti ti-download" style="margin-right:5px;"></i> Export date
+          </button>
+          <button class="btn-save" id="btn-import" style="background: var(--surface3); color: var(--text); border: 1px solid var(--border2);">
+            <i class="ti ti-upload" style="margin-right:5px;"></i> Import date
+          </button>
+          <input type="file" id="btn-import-file" accept=".json" style="display:none;" />
+          <span class="save-msg" id="import-msg"></span>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="db.js"></script>
+<script src="nav.js"></script>
+<script src="profile.js"></script>
+<script>
+  // Navigare ierarhica: back -> home.html
+  history.pushState({ page: 'profile.html' }, '', location.href);
+  window.addEventListener('popstate', function() {
+    location.replace('home.html');
+  });
+</script>
+</body>
+</html>

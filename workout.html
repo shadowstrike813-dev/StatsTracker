@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Antrenament — Health Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+<link rel="stylesheet" href="nav.css" />
+<link rel="stylesheet" href="style.css" />
+<style>
+  .page-actions { display: flex; justify-content: flex-end; margin-bottom: 1.5rem; }
+  .btn-config {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 7px 14px;
+    font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 500;
+    color: var(--text-muted); text-decoration: none;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .btn-config:hover { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+
+  .muscle-group { margin-bottom: 1.5rem; }
+  .muscle-group-title {
+    font-size: 11px; color: var(--text-dim); text-transform: uppercase;
+    letter-spacing: 0.07em; font-family: 'DM Mono', monospace;
+    margin-bottom: 8px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .ex-list { display: flex; flex-direction: column; gap: 4px; }
+
+  .ex-row {
+    display: grid;
+    grid-template-columns: 1fr 100px 80px 24px;
+    align-items: center; gap: 10px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 14px;
+    text-decoration: none; color: var(--text);
+    transition: background 0.15s, border-color 0.15s;
+    overflow: hidden;
+  }
+  .ex-row:hover { background: var(--surface2); border-color: var(--border2); }
+
+  .ex-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ex-max  { font-size: 14px; font-weight: 600; color: #a78bfa; text-align: right; }
+  .ex-date { font-size: 11px; color: var(--text-dim); font-family: 'DM Mono', monospace; text-align: right; white-space: nowrap; }
+  .ex-arrow { color: var(--text-dim); font-size: 16px; text-align: right; }
+
+  .empty-state { text-align: center; padding: 3rem 0; color: var(--text-dim); font-family: 'DM Mono', monospace; font-size: 13px; }
+  .empty-state a { color: var(--blue); }
+
+  @media (max-width: 768px) {
+    .ex-row {
+      grid-template-columns: 1fr 70px 20px;
+      padding: 10px;
+      gap: 8px;
+    }
+    .ex-date { display: none; }
+    .ex-name { font-size: 13px; }
+    .ex-max  { font-size: 13px; }
+  }
+</style>
+<link rel="manifest" href="manifest.json" />
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./service-worker.js');
+  }
+</script>
+</head>
+<body>
+<div class="app">
+  <main class="main">
+    <header>
+      <h1>Antrenament</h1>
+      <p>Lista exercițiilor · progres · sesiuni</p>
+    </header>
+
+    <div class="page-actions">
+      <a href="configure-exercises.html" class="btn-config">
+        <i class="ti ti-settings"></i> Configurează exerciții
+      </a>
+    </div>
+
+    <div id="content">
+      <p class="empty-state">Se încarcă…</p>
+    </div>
+  </main>
+</div>
+
+<script src="db.js"></script>
+<script src="nav.js"></script>
+<script src="workout.js"></script>
+<script>
+  // Navigare ierarhica: back -> home.html
+  history.pushState({ page: 'workout.html' }, '', location.href);
+  window.addEventListener('popstate', function() {
+    location.replace('home.html');
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Somn — Health Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+<link rel="stylesheet" href="nav.css" />
+<link rel="stylesheet" href="style.css" />
+
+<style>
+  /* ─── Sleep form ─── */
+  .sleep-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+
+  .sleep-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .sleep-field label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .sleep-field input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 8px 10px;
+    width: 100%;
+    transition: border-color 0.15s;
+  }
+  .sleep-field input:focus { outline: none; border-color: var(--border2); background: var(--surface3); }
+  .sleep-field input[type="date"]::-webkit-calendar-picker-indicator,
+  .sleep-field input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
+
+  .sleep-field-hint {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ─── Duration bar ─── */
+  .sleep-bar-wrap {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .sleep-bar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .sleep-bar-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .sleep-bar-value {
+    font-size: 22px;
+    font-weight: 600;
+    color: #a78bfa;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .sleep-bar-track {
+    height: 8px;
+    background: var(--surface3);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .sleep-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, #7c3aed, #a78bfa);
+    transition: width 0.4s ease;
+    min-width: 0;
+  }
+
+  .sleep-bar-zones {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ─── Stat card purple ─── */
+  .stat-value.purple { color: #a78bfa; }
+
+  /* ─── Table sleep ─── */
+  .sleep-duration-cell { color: #a78bfa; font-weight: 600; }
+  .sleep-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; padding: 2px 8px; border-radius: 20px;
+    font-family: 'DM Mono', monospace;
+  }
+  .sleep-badge.long   { background: rgba(52,211,153,0.12); color: #34d399; }
+  .sleep-badge.ok     { background: rgba(78,158,255,0.12); color: #4e9eff; }
+  .sleep-badge.short  { background: rgba(251,191,36,0.12); color: #fbbf24; }
+  .sleep-badge.vshort { background: rgba(248,113,113,0.12); color: #f87171; }
+
+  @media (max-width: 768px) {
+    .sleep-form-grid { grid-template-columns: 1fr; gap: 10px; }
+    .sleep-bar-value { font-size: 18px; }
+  }
+</style>
+
+<link rel="manifest" href="manifest.json" />
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./service-worker.js');
+  }
+</script>
+</head>
+<body>
+<div class="app">
+  <main class="main">
+    <header>
+      <h1>Somn</h1>
+      <p>Monitorizare oră culcat · oră trezit · durată</p>
+    </header>
+
+    <!-- Stat cards -->
+    <div class="cards-row">
+      <div class="stat-card">
+        <div class="stat-label">Medie durată</div>
+        <div class="stat-value purple" id="avg-duration">—</div>
+        <div class="stat-unit">ore</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Cel mai lung</div>
+        <div class="stat-value green" id="max-duration">—</div>
+        <div class="stat-unit">ore</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Înregistrări</div>
+        <div class="stat-value blue" id="total-entries">—</div>
+        <div class="stat-unit">nopți</div>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <div class="form-section">
+      <div class="section-title" style="margin-bottom:14px;">Adaugă somn</div>
+      <div class="sleep-form-grid">
+        <div class="sleep-field">
+          <label>Data culcat</label>
+          <input type="date" id="inp-sleep-date" />
+          <span class="sleep-field-hint">ziua în care te-ai culcat</span>
+        </div>
+        <div class="sleep-field">
+          <label>Ora culcat</label>
+          <input type="time" id="inp-sleep-time" />
+        </div>
+        <div class="sleep-field">
+          <label>Data trezit</label>
+          <input type="date" id="inp-wake-date" />
+          <span class="sleep-field-hint">ziua în care te-ai trezit</span>
+        </div>
+        <div class="sleep-field">
+          <label>Ora trezit</label>
+          <input type="time" id="inp-wake-time" />
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px; margin-top:4px;">
+        <button class="btn-add" id="btn-add">+ Adaugă</button>
+      </div>
+      <div class="err-msg" id="err-msg"></div>
+    </div>
+
+    <!-- Chart -->
+    <div class="chart-section">
+      <div class="chart-header">
+        <div class="section-title">Durată somn (ultimele 14 nopți)</div>
+        <div class="legend">
+          <span><span class="leg-dot" style="background:#a78bfa"></span>Ore dormite</span>
+          <span><span class="leg-dot" style="background:#4e9eff; border-radius:0; height:2px; width:16px; display:inline-block;"></span>Recomandare 8h</span>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="sleepChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Distribuție -->
+    <div class="chart-section">
+      <div class="chart-header">
+        <div class="section-title">Oră culcat vs Oră trezit (ultimele 14 nopți)</div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="scheduleChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Tabel -->
+    <div class="table-section">
+      <div class="section-title" style="padding:0.9rem 1.25rem; border-bottom:1px solid var(--border);">Istoric</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Data trezit</th>
+            <th>Culcat</th>
+            <th>Trezit</th>
+            <th>Durată</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbl-body"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="db.js"></script>
+<script src="nav.js"></script>
+<script src="sleep.js"></script>
+<script>
+  history.pushState({ page: 'sleep.html' }, '', location.href);
+  window.addEventListener('popstate', function() {
+    location.replace('home.html');
+  });
+</script>
+</body>
+</html>

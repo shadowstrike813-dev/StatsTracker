@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Greutate — Health Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+<link rel="stylesheet" href="nav.css" />
+<link rel="stylesheet" href="style.css" />
+
+<link rel="manifest" href="manifest.json" />
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./service-worker.js');
+  }
+</script>
+</head>
+<body>
+<div class="app">
+  <main class="main">
+    <header>
+      <h1>Greutate</h1>
+      <p>Monitorizare zilnică · IMC · obiectiv</p>
+    </header>
+
+    <div class="cards-row">
+      <div class="stat-card">
+        <div class="stat-label">Ultima valoare</div>
+        <div class="stat-value green" id="last-kg">—</div>
+        <div class="stat-unit">kg</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Medie</div>
+        <div class="stat-value blue" id="avg-kg">—</div>
+        <div class="stat-unit">kg</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">IMC</div>
+        <div class="stat-value amber" id="bmi-val">—</div>
+        <div class="stat-unit" id="bmi-label">necesită înălțime în profil</div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title">Adaugă măsurătoare</div>
+      <div class="form-row" style="grid-template-columns: 1fr 1fr auto;">
+        <input type="date" id="inp-date" />
+        <input type="number" id="inp-kg" placeholder="Kilograme" min="20" max="300" step="0.1" />
+        <button class="btn-add" id="btn-add">+ Adaugă</button>
+      </div>
+      <div class="err-msg" id="err-msg"></div>
+    </div>
+
+    <div class="chart-section">
+      <div class="chart-header">
+        <div class="section-title">Evoluție</div>
+        <div class="legend">
+          <span><span class="leg-dot" style="background:#34d399"></span>Greutate</span>
+          <span><span class="leg-dot" style="background:#fbbf24; border:2px dashed #fbbf24; background:transparent;"></span>Obiectiv</span>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="weightChart" aria-label="Grafic evoluție greutate"></canvas>
+      </div>
+    </div>
+
+    <div class="table-section">
+      <div class="section-title" style="padding:0.9rem 1.25rem; border-bottom:1px solid var(--border);">Istoric</div>
+      <table>
+        <thead>
+          <tr><th>Data</th><th>Greutate</th><th class="hide-mobile">IMC</th><th></th></tr>
+        </thead>
+        <tbody id="tbl-body"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="db.js"></script>
+<script src="nav.js"></script>
+<script src="weight.js"></script>
+<script>
+  // Navigare ierarhica: back -> home.html
+  history.pushState({ page: 'weight.html' }, '', location.href);
+  window.addEventListener('popstate', function() {
+    location.replace('home.html');
+  });
+</script>
+</body>
+</html>
