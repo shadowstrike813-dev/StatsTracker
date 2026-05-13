@@ -1,4 +1,4 @@
-const CACHE_NAME = 'health-tracker-v2';
+const CACHE_NAME = 'health-tracker-v3';
 
 const ASSETS = [
   './index.html',
@@ -15,6 +15,8 @@ const ASSETS = [
   './exercise.js',
   './configure-exercises.html',
   './configure-exercises.js',
+  './sleep.html',
+  './sleep.js',
   './nav.css',
   './nav.js',
   './style.css',
@@ -50,6 +52,10 @@ self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
 
   const url = new URL(e.request.url);
+
+  // Ignora request-uri de la extensii de browser
+  if (url.protocol === 'chrome-extension:' || url.protocol === 'moz-extension:') return;
+
   const pathname = url.pathname;
 
   // Extrage numele fisierului fara parametri
