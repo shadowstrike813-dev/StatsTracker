@@ -1,15 +1,17 @@
 // ─── IndexedDB setup ──────────────────────────────────────────────────────────
 
 const DB_NAME    = 'health-tracker';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 const STORES = {
-  entries:   { keyPath: 'id' },
-  weight:    { keyPath: 'id' },
-  profile:   { keyPath: 'id' },
-  exercises: { keyPath: 'id' },
-  workouts:  { keyPath: 'id' },
-  sleep:     { keyPath: 'id' },
+  entries:           { keyPath: 'id' },
+  weight:            { keyPath: 'id' },
+  profile:           { keyPath: 'id' },
+  exercises:         { keyPath: 'id' },
+  workouts:          { keyPath: 'id' },
+  sleep:             { keyPath: 'id' },
+  session_templates: { keyPath: 'id' },
+  sessions:          { keyPath: 'id' },
 };
 
 let _db = null;
@@ -83,8 +85,6 @@ function uuid() {
         return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
       });
 }
-
-// ─── Tensiune ──────────────────────────────────────────────────────────────────
 
 const DB = {
 
@@ -178,7 +178,6 @@ const DB = {
 
   deleteExercise: (id) => remove('exercises', id),
 
-  // Pune direct un exercitiu in DB (folosit la import)
   putExercise: (exercise) => put('exercises', exercise),
 
   reorderExercises: async (orderList) => {
@@ -195,13 +194,19 @@ const DB = {
     return exercise_id ? records.filter(w => w.exercise_id === exercise_id) : records;
   },
 
+  getWorkoutsBySession: async (session_id) => {
+    const records = await all('workouts');
+    return records.filter(w => w.session_id === session_id);
+  },
+
   addWorkout: async (data) => {
     const workout = {
       id:          uuid(),
       exercise_id: data.exercise_id,
       date:        data.date,
-      sets:        data.sets.map(s => ({ kg: parseFloat(s.kg), reps: parseInt(s.reps) })),
+      sets:        data.sets.map(s => ({ kg: parseFloat(s.kg), reps: parseInt(s.reps), warmup: !!s.warmup })),
       notes:       data.notes || '',
+      session_id:  data.session_id || null,
     };
     await put('workouts', workout);
     return workout;
@@ -227,23 +232,87 @@ const DB = {
 
   deleteSleep: (id) => remove('sleep', id),
 
+  // ── Session Templates ────────────────────────────────────────────────────────
+
+  getSessionTemplates: () => all('session_templates'),
+
+  addSessionTemplate: async (data) => {
+    const template = {
+      id:           uuid(),
+      name:         data.name.trim(),
+      exercise_ids: data.exercise_ids || [],
+      created_at:   new Date().toISOString(),
+    };
+    await put('session_templates', template);
+    return template;
+  },
+
+  updateSessionTemplate: async (id, data) => {
+    const existing = await get('session_templates', id);
+    if (!existing) throw new Error('Template negasit');
+    const updated = { ...existing, ...data };
+    await put('session_templates', updated);
+    return updated;
+  },
+
+  deleteSessionTemplate: (id) => remove('session_templates', id),
+
+  // ── Sessions ─────────────────────────────────────────────────────────────────
+
+  getSessions: () => all('sessions'),
+
+  getSession: (id) => get('sessions', id),
+
+  getActiveSession: async () => {
+    const sessions = await all('sessions');
+    return sessions.find(s => s.status === 'active') || null;
+  },
+
+  addSession: async (data) => {
+    const session = {
+      id:               uuid(),
+      template_id:      data.template_id,
+      template_name:    data.template_name,
+      exercise_ids:     data.exercise_ids,
+      status:           'active',
+      date_start:       null,
+      date_end:         null,
+      duration_minutes: null,
+      created_at:       new Date().toISOString(),
+    };
+    await put('sessions', session);
+    return session;
+  },
+
+  updateSession: async (id, data) => {
+    const existing = await get('sessions', id);
+    if (!existing) throw new Error('Sesiunea negasita');
+    const updated = { ...existing, ...data };
+    await put('sessions', updated);
+    return updated;
+  },
+
+  deleteSession: (id) => remove('sessions', id),
+
   // ── Export / Import ─────────────────────────────────────────────────────────
 
   exportAll: async () => {
     return {
-      version:   1,
-      exported:  new Date().toISOString(),
-      entries:   await all('entries'),
-      weight:    await all('weight'),
-      profile:   await all('profile'),
-      exercises: await all('exercises'),
-      workouts:  await all('workouts'),
-      sleep:     await all('sleep'),
+      version:           1,
+      exported:          new Date().toISOString(),
+      entries:           await all('entries'),
+      weight:            await all('weight'),
+      profile:           await all('profile'),
+      exercises:         await all('exercises'),
+      workouts:          await all('workouts'),
+      sleep:             await all('sleep'),
+      session_templates: await all('session_templates'),
+      sessions:          await all('sessions'),
     };
   },
 
   importAll: async (json) => {
-    const stores = ['entries', 'weight', 'profile', 'exercises', 'workouts', 'sleep'];
+    const stores = ['entries', 'weight', 'profile', 'exercises', 'workouts', 'sleep', 'session_templates', 'sessions'];
     for (const store of stores) {
       await clear(store);
       if (Array.isArray(json[store])) {

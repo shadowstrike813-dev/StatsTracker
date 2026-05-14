@@ -202,6 +202,40 @@ html, body {
   flex-shrink: 0;
 }
 
+/* ─── Active session indicator ──────────────────────────────────────────── */
+
+.nav-active-session {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-family: 'DM Mono', monospace;
+  font-weight: 500;
+  color: var(--green);
+  text-decoration: none;
+  background: var(--green-dim);
+  border: 1px solid rgba(52,211,153,0.2);
+  border-radius: 20px;
+  padding: 5px 12px;
+  transition: background 0.15s;
+}
+.nav-active-session:hover { background: rgba(52,211,153,0.2); }
+
+.nav-active-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse-dot 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.7); }
+}
+
 /* ─── Mobile ─────────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {

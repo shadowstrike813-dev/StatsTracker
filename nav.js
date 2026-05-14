@@ -10,6 +10,10 @@ function initNav(activePage) {
       <i class="ti ti-heart-rate-monitor"></i>
       Health Tracker
     </div>
+    <a href="session-active.html" class="nav-active-session" id="nav-active-session" style="display:none" title="Sesiune activă">
+      <span class="nav-active-dot"></span>
+      Sesiune activă
+    </a>
   `;
 
   // ─── Overlay ───────────────────────────────────────────────────────────────
@@ -54,6 +58,9 @@ function initNav(activePage) {
       <a href="workout.html" class="nav-link ${activePage === 'workout' ? 'active' : ''}">
         <i class="ti ti-barbell"></i> Antrenament
       </a>
+      <a href="sessions.html" class="nav-link ${activePage === 'sessions' ? 'active' : ''}">
+        <i class="ti ti-calendar-stats"></i> Sesiuni
+      </a>
     </div>
 
     <div class="nav-drawer-footer">
@@ -68,27 +75,43 @@ function initNav(activePage) {
   document.body.prepend(overlay);
   document.body.prepend(topbar);
 
-  // ─── Logic ────────────────────────────────────────────────────────────────
+  // ─── Open / Close ──────────────────────────────────────────────────────────
   function openDrawer() {
     drawer.classList.add('open');
     overlay.classList.add('open');
-    document.body.style.overflow = 'hidden';
   }
 
   function closeDrawer() {
     drawer.classList.remove('open');
     overlay.classList.remove('open');
-    document.body.style.overflow = '';
   }
 
   document.getElementById('nav-open').addEventListener('click', openDrawer);
   document.getElementById('nav-close').addEventListener('click', closeDrawer);
   overlay.addEventListener('click', closeDrawer);
 
-
-
-  // Inchide cu Escape
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeDrawer();
   });
+
+  // ─── Active session indicator ──────────────────────────────────────────────
+  // Verifica daca exista o sesiune activa si afiseaza indicatorul
+  if (typeof DB !== 'undefined') {
+    DB.getActiveSession().then(session => {
+      if (session) {
+        document.getElementById('nav-active-session').style.display = 'flex';
+      }
+    }).catch(() => {});
+  } else {
+    // DB nu e inca incarcat, asteaptam
+    window.addEventListener('load', () => {
+      if (typeof DB !== 'undefined') {
+        DB.getActiveSession().then(session => {
+          if (session) {
+            document.getElementById('nav-active-session').style.display = 'flex';
+          }
+        }).catch(() => {});
+      }
+    });
+  }
 }

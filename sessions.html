@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sesiuni — Health Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+<link rel="stylesheet" href="nav.css" />
+<link rel="stylesheet" href="style.css" />
+<style>
+  .page-actions { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:10px; }
+
+  .btn-new-session {
+    display:flex; align-items:center; gap:7px;
+    background:var(--blue); color:#000; border:none;
+    border-radius:var(--radius); padding:9px 18px;
+    font-family:'Syne',sans-serif; font-size:13px; font-weight:600;
+    cursor:pointer; transition:opacity 0.15s;
+  }
+  .btn-new-session:hover { opacity:0.85; }
+  .btn-new-session:disabled { opacity:0.4; cursor:not-allowed; }
+
+  .btn-templates {
+    display:flex; align-items:center; gap:6px;
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius); padding:8px 14px;
+    font-family:'Syne',sans-serif; font-size:13px; font-weight:500;
+    color:var(--text-muted); text-decoration:none;
+    transition:background 0.15s, color 0.15s;
+  }
+  .btn-templates:hover { background:var(--surface2); color:var(--text); }
+
+  /* ─── Session cards ─── */
+  .sessions-stack { display:flex; flex-direction:column; gap:10px; }
+
+  .session-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-lg); overflow:hidden;
+  }
+  .session-card-head {
+    display:grid; grid-template-columns:1fr auto;
+    align-items:start; gap:12px;
+    padding:14px 16px; cursor:pointer;
+  }
+  .session-card-head:hover { background:var(--surface2); }
+
+  .session-card-title { font-size:15px; font-weight:600; margin-bottom:4px; }
+  .session-card-meta  { font-size:11px; color:var(--text-muted); font-family:'DM Mono',monospace; display:flex; gap:12px; flex-wrap:wrap; }
+  .session-card-badge {
+    font-size:11px; font-family:'DM Mono',monospace;
+    padding:3px 10px; border-radius:20px;
+    background:var(--green-dim); color:var(--green);
+  }
+  .session-card-badge.active-badge {
+    background:var(--amber-dim); color:var(--amber);
+    animation:pulse-badge 2s ease-in-out infinite;
+  }
+  @keyframes pulse-badge { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+  .session-card-body { display:none; border-top:1px solid var(--border); }
+  .session-card-body.open { display:block; }
+
+  /* ─── Exercise rows in session ─── */
+  .session-ex-list { padding:8px 10px; display:flex; flex-direction:column; gap:4px; }
+  .session-ex-row {
+    display:grid; grid-template-columns:1fr auto auto;
+    align-items:center; gap:10px;
+    background:var(--surface2); border:1px solid var(--border);
+    border-radius:var(--radius); padding:10px 12px;
+    text-decoration:none; color:var(--text);
+    transition:background 0.15s, border-color 0.15s;
+    cursor:pointer;
+  }
+  .session-ex-row:hover { background:var(--surface3); border-color:var(--border2); }
+  .session-ex-name { font-size:13px; font-weight:500; }
+  .session-ex-sets { font-size:11px; color:var(--text-dim); font-family:'DM Mono',monospace; }
+  .session-ex-max  { font-size:13px; font-weight:600; color:#a78bfa; }
+
+  .session-card-footer {
+    padding:10px 16px; border-top:1px solid var(--border);
+    display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
+  }
+  .session-nav-btns { display:flex; gap:8px; }
+  .btn-session-nav {
+    display:flex; align-items:center; gap:5px;
+    background:none; border:1px solid var(--border2); border-radius:var(--radius);
+    padding:6px 12px; font-family:'DM Mono',monospace; font-size:12px;
+    color:var(--text-muted); cursor:pointer; text-decoration:none;
+    transition:background 0.15s, color 0.15s;
+  }
+  .btn-session-nav:hover { background:var(--surface2); color:var(--text); }
+  .btn-session-nav:disabled { opacity:0.3; cursor:not-allowed; }
+
+  .btn-del-session { background:none; border:none; cursor:pointer; color:var(--text-dim); font-size:12px; font-family:'DM Mono',monospace; padding:4px 8px; border-radius:6px; transition:color 0.15s, background 0.15s; display:flex; align-items:center; gap:5px; }
+  .btn-del-session:hover { color:var(--red); background:var(--red-dim); }
+
+  .empty-sessions { text-align:center; padding:3rem; color:var(--text-dim); font-family:'DM Mono',monospace; font-size:13px; }
+
+  /* ─── Choose template modal ─── */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:500; align-items:center; justify-content:center; padding:1rem; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--surface); border:1px solid var(--border2); border-radius:var(--radius-lg); padding:1.5rem; width:100%; max-width:400px; max-height:85vh; overflow-y:auto; }
+  .modal-title { font-size:15px; font-weight:600; margin-bottom:1.25rem; }
+  .tpl-choice-list { display:flex; flex-direction:column; gap:6px; margin-bottom:1rem; }
+  .tpl-choice-item {
+    display:flex; flex-direction:column; gap:3px;
+    background:var(--surface2); border:1px solid var(--border);
+    border-radius:var(--radius); padding:12px 14px;
+    cursor:pointer; transition:border-color 0.15s, background 0.15s;
+  }
+  .tpl-choice-item:hover { background:var(--surface3); border-color:var(--border2); }
+  .tpl-choice-name { font-size:14px; font-weight:600; }
+  .tpl-choice-meta { font-size:11px; color:var(--text-dim); font-family:'DM Mono',monospace; }
+  .btn-cancel { background:none; border:1px solid var(--border2); border-radius:var(--radius); padding:8px 16px; color:var(--text-muted); font-family:'Syne',sans-serif; font-size:13px; cursor:pointer; width:100%; }
+  .btn-cancel:hover { background:var(--surface2); }
+
+  /* ─── Exercise detail modal ─── */
+  .ex-modal { max-width:560px; }
+  .ex-modal-sets { display:flex; flex-direction:column; gap:4px; margin-top:8px; }
+  .ex-modal-set-row { display:flex; justify-content:space-between; font-size:13px; font-family:'DM Mono',monospace; padding:6px 10px; background:var(--surface2); border-radius:8px; }
+  .ex-modal-set-row.warmup-row { opacity:0.6; }
+</style>
+<link rel="manifest" href="manifest.json" />
+<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('./service-worker.js');</script>
+</head>
+<body>
+<div class="app">
+  <main class="main">
+    <header>
+      <h1>Sesiuni</h1>
+      <p>Istoricul sesiunilor de antrenament</p>
+    </header>
+
+    <div class="page-actions">
+      <button class="btn-new-session" id="btn-new-session"><i class="ti ti-plus"></i> Sesiune nouă</button>
+      <a href="session-templates.html" class="btn-templates"><i class="ti ti-layout-list"></i> Template-uri</a>
+    </div>
+
+    <div class="sessions-stack" id="sessions-stack">
+      <p class="empty-sessions">Se încarcă…</p>
+    </div>
+  </main>
+</div>
+
+<!-- Choose template modal -->
+<div class="modal-overlay" id="tpl-modal">
+  <div class="modal">
+    <div class="modal-title">Alege tipul sesiunii</div>
+    <div class="tpl-choice-list" id="tpl-choice-list"></div>
+    <button class="btn-cancel" id="btn-cancel-tpl">Anulează</button>
+  </div>
+</div>
+
+<!-- Exercise detail modal -->
+<div class="modal-overlay" id="ex-modal">
+  <div class="modal ex-modal">
+    <div class="modal-title" id="ex-modal-title">—</div>
+    <div id="ex-modal-content"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:1rem;">
+      <button class="btn-cancel" id="btn-close-ex-modal" style="width:auto;padding:8px 20px;">Închide</button>
+    </div>
+  </div>
+</div>
+
+<script src="db.js"></script>
+<script src="nav.js"></script>
+<script src="sessions.js"></script>
+</body>
+</html>

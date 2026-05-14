@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Template-uri — Health Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+<link rel="stylesheet" href="nav.css" />
+<link rel="stylesheet" href="style.css" />
+<style>
+  .back-link { display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--text-muted); text-decoration:none; margin-bottom:1.25rem; transition:color 0.15s; font-family:'DM Mono',monospace; }
+  .back-link:hover { color:var(--text); }
+
+  /* ─── Add form ─── */
+  .field { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+  .field label { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.07em; font-family:'DM Mono',monospace; }
+  .field input {
+    background:var(--surface2); border:1px solid var(--border);
+    border-radius:var(--radius); color:var(--text);
+    font-family:'DM Mono',monospace; font-size:13px;
+    padding:8px 10px; width:100%; transition:border-color 0.15s;
+  }
+  .field input:focus { outline:none; border-color:var(--border2); background:var(--surface3); }
+  .field input::placeholder { color:var(--text-dim); }
+
+  /* ─── Exercise picker ─── */
+  .ex-picker { display:flex; flex-direction:column; gap:4px; max-height:200px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius); padding:6px; background:var(--surface2); }
+  .ex-picker-item { display:flex; align-items:center; gap:8px; padding:7px 10px; border-radius:8px; cursor:pointer; transition:background 0.12s; font-size:13px; }
+  .ex-picker-item:hover { background:var(--surface3); }
+  .ex-picker-item input[type=checkbox] { accent-color:var(--blue); width:15px; height:15px; flex-shrink:0; cursor:pointer; }
+  .ex-picker-item-name { flex:1; }
+  .ex-picker-item-group { font-size:10px; color:var(--text-dim); font-family:'DM Mono',monospace; }
+
+  .save-row { display:flex; align-items:center; gap:12px; margin-top:4px; }
+  .btn-save-tpl {
+    background:var(--blue); color:#000; border:none;
+    border-radius:var(--radius); padding:9px 20px;
+    font-family:'Syne',sans-serif; font-size:13px; font-weight:600;
+    cursor:pointer; transition:opacity 0.15s;
+  }
+  .btn-save-tpl:hover { opacity:0.85; }
+  .save-msg { font-size:12px; font-family:'DM Mono',monospace; }
+  .save-msg.ok  { color:var(--green); }
+  .save-msg.err { color:var(--red); }
+
+  /* ─── Template list ─── */
+  .tpl-list { display:flex; flex-direction:column; gap:8px; }
+  .tpl-item { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; }
+  .tpl-head { display:grid; grid-template-columns:1fr auto auto; align-items:center; gap:10px; padding:12px 14px; cursor:pointer; }
+  .tpl-head:hover { background:var(--surface2); }
+  .tpl-name { font-size:14px; font-weight:600; }
+  .tpl-count { font-size:11px; color:var(--text-dim); font-family:'DM Mono',monospace; }
+  .tpl-actions { display:flex; gap:6px; }
+  .tpl-btn { background:none; border:none; cursor:pointer; color:var(--text-dim); font-size:16px; padding:4px 6px; border-radius:6px; transition:color 0.15s, background 0.15s; display:flex; align-items:center; }
+  .tpl-btn:hover { color:var(--text); background:var(--surface3); }
+  .tpl-btn.del:hover { color:var(--red); background:var(--red-dim); }
+
+  .tpl-body { display:none; padding:10px 14px; border-top:1px solid var(--border); }
+  .tpl-body.open { display:block; }
+  .tpl-ex-list { display:flex; flex-direction:column; gap:4px; }
+
+  /* ─── Drag & drop reorder in template ─── */
+  .tpl-ex-row {
+    display:grid; grid-template-columns:24px 1fr auto;
+    align-items:center; gap:8px;
+    background:var(--surface2); border:1px solid var(--border);
+    border-radius:8px; padding:8px 10px;
+    transition:border-color 0.15s, background 0.15s, opacity 0.15s;
+  }
+  .tpl-ex-row.dragging  { opacity:0.3; border-style:dashed; }
+  .tpl-ex-row.drag-over { border-color:var(--blue); background:var(--blue-dim); }
+  .tpl-ex-drag { color:var(--text-dim); font-size:14px; cursor:grab; }
+  .tpl-ex-drag:active { cursor:grabbing; }
+  .tpl-ex-name { font-size:13px; }
+  .tpl-ex-group { font-size:10px; color:var(--text-dim); font-family:'DM Mono',monospace; }
+
+  /* ─── Edit modal ─── */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:500; align-items:center; justify-content:center; padding:1rem; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--surface); border:1px solid var(--border2); border-radius:var(--radius-lg); padding:1.5rem; width:100%; max-width:480px; max-height:90vh; overflow-y:auto; }
+  .modal-title { font-size:15px; font-weight:600; margin-bottom:1.25rem; }
+  .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:1rem; }
+  .btn-cancel { background:none; border:1px solid var(--border2); border-radius:var(--radius); padding:8px 16px; color:var(--text-muted); font-family:'Syne',sans-serif; font-size:13px; cursor:pointer; }
+  .btn-cancel:hover { background:var(--surface2); }
+
+  .empty-tpl { text-align:center; padding:2rem; color:var(--text-dim); font-family:'DM Mono',monospace; font-size:13px; }
+</style>
+<link rel="manifest" href="manifest.json" />
+<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('./service-worker.js');</script>
+</head>
+<body>
+<div class="app">
+  <main class="main">
+    <a href="sessions.html" class="back-link"><i class="ti ti-arrow-left"></i> Sesiuni</a>
+    <header>
+      <h1>Template-uri sesiuni</h1>
+      <p>Creează și editează template-urile de antrenament</p>
+    </header>
+
+    <!-- Add form -->
+    <div class="form-section" style="margin-bottom:1.5rem;">
+      <div class="section-title" style="margin-bottom:1rem;">Template nou</div>
+      <div class="field">
+        <label>Nume template *</label>
+        <input type="text" id="f-name" placeholder="ex: Biceps Triceps" />
+      </div>
+      <div class="field">
+        <label>Exerciții</label>
+        <div class="ex-picker" id="ex-picker">
+          <div style="color:var(--text-dim);font-size:12px;font-family:'DM Mono',monospace;padding:6px;">Se încarcă…</div>
+        </div>
+      </div>
+      <div class="save-row">
+        <button class="btn-save-tpl" id="btn-add-tpl">+ Adaugă template</button>
+        <span class="save-msg" id="add-msg"></span>
+      </div>
+    </div>
+
+    <!-- Template list -->
+    <div class="table-section">
+      <div class="section-title" style="padding:0.9rem 1.25rem; border-bottom:1px solid var(--border);">Template-uri salvate</div>
+      <div style="padding:10px;">
+        <div class="tpl-list" id="tpl-list">
+          <p class="empty-tpl">Se încarcă…</p>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Edit modal -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title">Editează template</div>
+    <div class="field">
+      <label>Nume *</label>
+      <input type="text" id="e-name" />
+    </div>
+    <div class="field">
+      <label>Exerciții</label>
+      <div class="ex-picker" id="e-ex-picker"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btn-cancel">Anulează</button>
+      <button class="btn-save-tpl" id="btn-save-edit">Salvează</button>
+    </div>
+    <div class="save-msg" id="edit-msg" style="margin-top:8px;"></div>
+  </div>
+</div>
+
+<script src="db.js"></script>
+<script src="nav.js"></script>
+<script src="session-templates.js"></script>
+</body>
+</html>

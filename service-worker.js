@@ -1,4 +1,4 @@
-const CACHE_NAME = 'health-tracker-v3';
+const CACHE_NAME = 'health-tracker-v4';
 
 const ASSETS = [
   './index.html',
@@ -17,6 +17,12 @@ const ASSETS = [
   './configure-exercises.js',
   './sleep.html',
   './sleep.js',
+  './sessions.html',
+  './sessions.js',
+  './session-active.html',
+  './session-active.js',
+  './session-templates.html',
+  './session-templates.js',
   './nav.css',
   './nav.js',
   './style.css',
@@ -29,7 +35,6 @@ const ASSETS = [
   'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js',
 ];
 
-// Instalare — cache toate resursele imediat
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
@@ -37,7 +42,6 @@ self.addEventListener('install', (e) => {
   self.skipWaiting();
 });
 
-// Activare — sterge cache-uri vechi
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then(keys =>
@@ -47,29 +51,22 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
-// Fetch — strategie inteligenta
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
 
   const url = new URL(e.request.url);
 
-  // Ignora request-uri de la extensii de browser
+  // Ignora extensii de browser
   if (url.protocol === 'chrome-extension:' || url.protocol === 'moz-extension:') return;
 
   const pathname = url.pathname;
-
-  // Extrage numele fisierului fara parametri
   const filename = pathname.split('/').pop() || 'index.html';
 
   e.respondWith(
     caches.open(CACHE_NAME).then(async cache => {
-
-      // 1. Incearca sa gaseasca in cache exact URL-ul
       const exactMatch = await cache.match(e.request);
       if (exactMatch) return exactMatch;
 
-      // 2. Pentru fisiere HTML cu parametri (ex: exercise.html?id=xyz)
-      //    cauta in cache doar fisierul fara parametri
       if (filename.endsWith('.html') || filename === '') {
         const htmlFile = filename || 'home.html';
         const cacheKey = new Request('./' + htmlFile);
@@ -77,7 +74,6 @@ self.addEventListener('fetch', (e) => {
         if (htmlMatch) return htmlMatch;
       }
 
-      // 3. Incearca reteaua
       try {
         const networkResponse = await fetch(e.request);
         if (networkResponse && networkResponse.status === 200) {
@@ -85,7 +81,6 @@ self.addEventListener('fetch', (e) => {
         }
         return networkResponse;
       } catch (err) {
-        // 4. Offline si nu e in cache — fallback la home
         const fallback = await cache.match('./home.html');
         if (fallback) return fallback;
       }
