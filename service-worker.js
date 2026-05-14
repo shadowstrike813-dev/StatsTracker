@@ -1,4 +1,4 @@
-const CACHE_NAME = 'health-tracker-v5';
+const CACHE_NAME = 'health-tracker-v6';
 
 const ASSETS = [
   './index.html',
@@ -24,6 +24,7 @@ const ASSETS = [
   './session-templates.html',
   './session-templates.js',
   './drag-touch.js',
+  './version.js',
   './nav.css',
   './nav.js',
   './style.css',

@@ -1,4 +1,11 @@
 function initNav(activePage) {
+  // Incarca version.js daca nu e deja incarcat
+  if (typeof APP_VERSION === 'undefined') {
+    const vs = document.createElement('script');
+    vs.src = './version.js';
+    document.head.appendChild(vs);
+  }
+
   // ─── Top bar ───────────────────────────────────────────────────────────────
   const topbar = document.createElement('div');
   topbar.className = 'nav-topbar';
@@ -67,6 +74,7 @@ function initNav(activePage) {
       <a href="profile.html" class="nav-link ${activePage === 'profile' ? 'active' : ''}">
         <i class="ti ti-user"></i> Profil
       </a>
+      <div class="nav-version" id="nav-version">v—</div>
     </div>
   `;
 
@@ -92,6 +100,12 @@ function initNav(activePage) {
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeDrawer();
+  });
+
+  // ─── Version ───────────────────────────────────────────────────────────────
+  window.addEventListener('load', () => {
+    const el = document.getElementById('nav-version');
+    if (el && typeof APP_VERSION !== 'undefined') el.textContent = 'v' + APP_VERSION;
   });
 
   // ─── Active session indicator ──────────────────────────────────────────────

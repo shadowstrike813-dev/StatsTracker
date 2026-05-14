@@ -202,6 +202,14 @@ html, body {
   flex-shrink: 0;
 }
 
+.nav-version {
+  font-size: 10px;
+  font-family: 'DM Mono', monospace;
+  color: var(--text-dim);
+  padding: 6px 10px 4px;
+  letter-spacing: 0.05em;
+}
+
 /* ─── Active session indicator ──────────────────────────────────────────── */
 
 .nav-active-session {
