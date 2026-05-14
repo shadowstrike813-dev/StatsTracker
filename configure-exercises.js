@@ -31,6 +31,15 @@ function renderList() {
       <button class="ex-item-btn del" onclick="deleteExercise('${ex.id}')" title="Șterge"><i class="ti ti-trash"></i></button>
     </div>
   `).join('');
+
+  // Touch drag & drop
+  enableTouchDrag(list, '.ex-item', (fromIdx, toIdx) => {
+    const moved = exercises.splice(fromIdx, 1)[0];
+    exercises.splice(toIdx, 0, moved);
+    exercises.forEach((ex, i) => { ex.order = i + 1; });
+    renderList();
+    DB.reorderExercises(exercises.map(ex => ({ id: ex.id, order: ex.order })));
+  });
 }
 
 function onDragStart(e, idx) { dragSrcIdx = idx; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }

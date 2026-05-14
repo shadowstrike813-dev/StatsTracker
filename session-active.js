@@ -173,6 +173,16 @@ function renderExercises() {
         </div>
       </div>`;
   }).join('');
+
+  // Touch drag & drop
+  enableTouchDrag(list, '.active-ex-item', async (fromIdx, toIdx) => {
+    const ids = [...session.exercise_ids];
+    const moved = ids.splice(fromIdx, 1)[0];
+    ids.splice(toIdx, 0, moved);
+    session.exercise_ids = ids;
+    await DB.updateSession(session.id, { exercise_ids: ids });
+    renderExercises();
+  });
 }
 
 // Drag & drop reorder

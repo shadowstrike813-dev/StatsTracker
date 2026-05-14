@@ -72,6 +72,20 @@ function renderTemplates() {
       </div>
     `;
   }).join('');
+
+  // Touch drag & drop per template
+  templates.forEach(tpl => {
+    const exListEl = document.getElementById(`tpl-ex-list-${tpl.id}`);
+    if (!exListEl) return;
+    enableTouchDrag(exListEl, '.tpl-ex-row', async (fromIdx, toIdx) => {
+      const ids = [...tpl.exercise_ids];
+      const moved = ids.splice(fromIdx, 1)[0];
+      ids.splice(toIdx, 0, moved);
+      tpl.exercise_ids = ids;
+      await DB.updateSessionTemplate(tpl.id, { exercise_ids: ids });
+      renderTemplates();
+    });
+  });
 }
 
 function renderTplExList(tpl, exNames) {

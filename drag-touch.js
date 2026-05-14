@@ -1,86 +1,105 @@
-// ─── Touch support pentru drag & drop ────────────────────────────────────────
-// Simuleaza evenimente dragstart / dragover / drop / dragend pe touch devices.
+// ─── Touch Drag & Drop ────────────────────────────────────────────────────────
+// Functie globala care activeaza drag & drop pe touch pentru un container.
+// Apeleaza: enableTouchDrag(containerEl, itemSelector, onReorder)
+// onReorder(fromIdx, toIdx) — callback cand utilizatorul a terminat dragul
 
-(function () {
-  let dragEl = null;       // elementul tras
-  let clone  = null;       // clona vizuala care urmeza degetul
-  let srcIdx = null;       // indexul sursa
-  let lastTarget = null;   // ultimul element peste care am trecut
+function enableTouchDrag(container, itemSelector, onReorder) {
+  let dragEl    = null;
+  let clone     = null;
+  let fromIdx   = null;
+  let lastOver  = null;
+  let startX    = 0;
+  let startY    = 0;
+  let moved     = false;
 
-  function getClosestDraggable(el) {
-    while (el) {
-      if (el.getAttribute && el.getAttribute('draggable') === 'true') return el;
-      el = el.parentElement;
-    }
-    return null;
+  function getItems() {
+    return [...container.querySelectorAll(itemSelector)];
   }
 
-  function getElementAtPoint(x, y) {
-    // Ascundem clona ca sa putem gasi elementul de dedesubt
-    if (clone) clone.style.display = 'none';
-    const el = document.elementFromPoint(x, y);
-    if (clone) clone.style.display = '';
-    return el;
+  function getIdx(el) {
+    return getItems().indexOf(el);
   }
 
   function createClone(el) {
     const rect = el.getBoundingClientRect();
-    clone = el.cloneNode(true);
-    clone.style.cssText = `
+    const c = el.cloneNode(true);
+    c.style.cssText = `
       position: fixed;
       left: ${rect.left}px;
       top: ${rect.top}px;
       width: ${rect.width}px;
       height: ${rect.height}px;
-      opacity: 0.85;
+      opacity: 0.9;
       pointer-events: none;
       z-index: 9999;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
       border-radius: 10px;
+      transform: scale(1.04);
       transition: none;
-      transform: scale(1.03);
     `;
-    document.body.appendChild(clone);
-    return clone;
+    document.body.appendChild(c);
+    return c;
   }
 
-  function fire(el, type, x, y) {
-    const rect = el.getBoundingClientRect();
-    const evt = new DragEvent(type, {
-      bubbles: true,
-      cancelable: true,
-      clientX: x,
-      clientY: y,
-    });
-    // Setam dataTransfer minimal
-    try { evt.dataTransfer.effectAllowed = 'move'; } catch(e) {}
-    el.dispatchEvent(evt);
+  function getItemAtPoint(x, y) {
+    if (clone) clone.style.display = 'none';
+    const el = document.elementFromPoint(x, y);
+    if (clone) clone.style.display = '';
+    if (!el) return null;
+    const items = getItems();
+    // Cautam cel mai apropiat item parinte
+    let node = el;
+    while (node && node !== container) {
+      if (items.includes(node)) return node;
+      node = node.parentElement;
+    }
+    return null;
   }
 
-  document.addEventListener('touchstart', (e) => {
+  container.addEventListener('touchstart', (e) => {
+    // Verificam daca s-a atins un grip handle sau elementul direct draggable
     const touch = e.touches[0];
-    const target = getClosestDraggable(touch.target);
-    if (!target) return;
+    const target = e.target;
 
-    // Nu pornim drag daca e input/button
-    if (['INPUT','BUTTON','SELECT','TEXTAREA'].includes(touch.target.tagName)) return;
+    // Ignoram input-uri si butoane
+    if (['INPUT','BUTTON','SELECT','TEXTAREA','A'].includes(target.tagName)) return;
 
-    dragEl = target;
-    dragEl.classList.add('dragging');
-    dragEl.style.opacity = '0.3';
+    const items = getItems();
+    let dragItem = null;
 
-    clone = createClone(dragEl);
-    fire(dragEl, 'dragstart', touch.clientX, touch.clientY);
+    // Verificam daca am atins un item din lista sau un copil al lui
+    let node = target;
+    while (node && node !== container) {
+      if (items.includes(node)) { dragItem = node; break; }
+      node = node.parentElement;
+    }
+    if (!dragItem) return;
 
-    // Prevenim scroll in timp ce tragem
-    e.preventDefault();
-  }, { passive: false });
+    startX = touch.clientX;
+    startY = touch.clientY;
+    moved  = false;
+    dragEl = dragItem;
+    fromIdx = getIdx(dragEl);
 
-  document.addEventListener('touchmove', (e) => {
+  }, { passive: true });
+
+  container.addEventListener('touchmove', (e) => {
     if (!dragEl) return;
-    e.preventDefault();
 
     const touch = e.touches[0];
+    const dx = Math.abs(touch.clientX - startX);
+    const dy = Math.abs(touch.clientY - startY);
+
+    // Pornim dragul dupa ce s-a miscat suficient (10px)
+    if (!moved && (dx > 10 || dy > 10)) {
+      moved = true;
+      clone = createClone(dragEl);
+      dragEl.style.opacity = '0.3';
+    }
+
+    if (!moved) return;
+    e.preventDefault();
+
     const x = touch.clientX;
     const y = touch.clientY;
 
@@ -89,60 +108,52 @@
     clone.style.left = (x - rect.width / 2) + 'px';
     clone.style.top  = (y - rect.height / 2) + 'px';
 
-    // Gasim elementul de dedesubt
-    const below = getElementAtPoint(x, y);
-    const overEl = getClosestDraggable(below);
+    // Gasim itemul de dedesubt
+    const overEl = getItemAtPoint(x, y);
+
+    if (lastOver && lastOver !== overEl) {
+      lastOver.classList.remove('drag-over');
+    }
 
     if (overEl && overEl !== dragEl) {
-      if (lastTarget && lastTarget !== overEl) {
-        fire(lastTarget, 'dragleave', x, y);
-        lastTarget.classList.remove('drag-over');
-      }
-      if (overEl !== lastTarget) {
-        fire(overEl, 'dragover', x, y);
-        overEl.classList.add('drag-over');
-        lastTarget = overEl;
-      }
-    } else if (lastTarget && (!overEl || overEl === dragEl)) {
-      fire(lastTarget, 'dragleave', x, y);
-      lastTarget.classList.remove('drag-over');
-      lastTarget = null;
+      overEl.classList.add('drag-over');
+      lastOver = overEl;
+    } else {
+      lastOver = null;
     }
+
   }, { passive: false });
 
-  document.addEventListener('touchend', (e) => {
+  container.addEventListener('touchend', (e) => {
     if (!dragEl) return;
 
-    const touch = e.changedTouches[0];
-    const x = touch.clientX;
-    const y = touch.clientY;
+    if (moved && clone) {
+      const touch = e.changedTouches[0];
+      const overEl = getItemAtPoint(touch.clientX, touch.clientY);
 
-    // Drop
-    const below = getElementAtPoint(x, y);
-    const dropEl = getClosestDraggable(below);
-
-    if (dropEl && dropEl !== dragEl) {
-      dropEl.classList.remove('drag-over');
-      fire(dropEl, 'drop', x, y);
+      if (overEl && overEl !== dragEl) {
+        const toIdx = getIdx(overEl);
+        if (toIdx !== fromIdx && toIdx !== -1) {
+          onReorder(fromIdx, toIdx);
+        }
+      }
     }
-
-    fire(dragEl, 'dragend', x, y);
 
     // Cleanup
-    dragEl.classList.remove('dragging');
-    dragEl.style.opacity = '';
-    if (lastTarget) { lastTarget.classList.remove('drag-over'); lastTarget = null; }
     if (clone) { clone.remove(); clone = null; }
+    if (lastOver) { lastOver.classList.remove('drag-over'); lastOver = null; }
+    dragEl.style.opacity = '';
     dragEl = null;
-  }, { passive: false });
+    fromIdx = null;
+    moved = false;
 
-  document.addEventListener('touchcancel', () => {
-    if (!dragEl) return;
-    fire(dragEl, 'dragend', 0, 0);
-    dragEl.classList.remove('dragging');
-    dragEl.style.opacity = '';
-    if (lastTarget) { lastTarget.classList.remove('drag-over'); lastTarget = null; }
+  }, { passive: true });
+
+  container.addEventListener('touchcancel', () => {
     if (clone) { clone.remove(); clone = null; }
-    dragEl = null;
-  });
-})();
+    if (lastOver) { lastOver.classList.remove('drag-over'); lastOver = null; }
+    if (dragEl) { dragEl.style.opacity = ''; dragEl = null; }
+    fromIdx = null;
+    moved = false;
+  }, { passive: true });
+}
