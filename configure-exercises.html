@@ -189,7 +189,9 @@
     <div class="table-section">
       <div class="section-title" style="padding:0.9rem 1.25rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
         <span>Exerciții configurate</span>
-        <span style="font-size:11px; color:var(--text-dim);">trage pentru a reordona</span>
+        <button id="btn-reorder" style="display:flex;align-items:center;gap:5px;background:none;border:1px solid var(--border2);border-radius:var(--radius);padding:5px 12px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);cursor:pointer;transition:background 0.15s,color 0.15s;">
+          <i class="ti ti-arrows-sort"></i> Reordonează
+        </button>
       </div>
       <div style="padding: 10px 10px;">
         <div class="ex-list" id="ex-list">
@@ -267,14 +269,7 @@
 
 <script src="db.js"></script>
 <script src="nav.js"></script>
-<script src="drag-touch.js"></script>
+<script src="reorder-modal.js"></script>
 <script src="configure-exercises.js"></script>
-<script>
-  // Navigare ierarhica: back -> workout.html
-  history.pushState({ page: 'configure-exercises.html' }, '', location.href);
-  window.addEventListener('popstate', function() {
-    location.replace('workout.html');
-  });
-</script>
 </body>
 </html>

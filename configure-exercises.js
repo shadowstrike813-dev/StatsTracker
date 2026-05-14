@@ -18,9 +18,9 @@ function renderList() {
   const list = document.getElementById('ex-list');
   if (!exercises.length) { list.innerHTML = '<p class="empty-list">Niciun exercițiu adăugat încă.</p>'; return; }
   list.innerHTML = exercises.map((ex, idx) => `
-    <div class="ex-item ${ex.active ? '' : 'inactive'}" draggable="true" data-idx="${idx}"
+    <div class="ex-item ${ex.active ? '' : 'inactive'}" data-idx="${idx}"
       ondragstart="onDragStart(event, ${idx})" ondragover="onDragOver(event, ${idx})"
-      ondragleave="onDragLeave(event)" ondrop="onDrop(event, ${idx})" ondragend="onDragEnd(event)">
+      ondragleave="onDragLeave(event)" ondrop="onDrop(event, ${idx})" ondragend="onDragEnd(event)" draggable="true">
       <div class="drag-handle"><i class="ti ti-grip-vertical"></i></div>
       <div class="ex-info">
         <div class="ex-info-name">${ex.name}</div>
@@ -31,16 +31,26 @@ function renderList() {
       <button class="ex-item-btn del" onclick="deleteExercise('${ex.id}')" title="Șterge"><i class="ti ti-trash"></i></button>
     </div>
   `).join('');
-
-  // Touch drag & drop
-  enableTouchDrag(list, '.ex-item', (fromIdx, toIdx) => {
-    const moved = exercises.splice(fromIdx, 1)[0];
-    exercises.splice(toIdx, 0, moved);
-    exercises.forEach((ex, i) => { ex.order = i + 1; });
-    renderList();
-    DB.reorderExercises(exercises.map(ex => ({ id: ex.id, order: ex.order })));
-  });
 }
+
+// ─── Reordonare via modal ─────────────────────────────────────────────────────
+
+document.getElementById('btn-reorder').addEventListener('click', () => {
+  openReorderModal(
+    exercises.map(ex => ({ id: ex.id, label: ex.name, sublabel: ex.muscle_group || '' })),
+    async (newIds) => {
+      newIds.forEach((id, i) => {
+        const ex = exercises.find(e => e.id === id);
+        if (ex) ex.order = i + 1;
+      });
+      exercises.sort((a, b) => a.order - b.order);
+      renderList();
+      await DB.reorderExercises(exercises.map(ex => ({ id: ex.id, order: ex.order })));
+    }
+  );
+});
+
+// ─── Desktop drag & drop (pastreaza functionalitatea pe desktop) ──────────────
 
 function onDragStart(e, idx) { dragSrcIdx = idx; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
 function onDragOver(e, idx)  { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (idx !== dragSrcIdx) e.currentTarget.classList.add('drag-over'); }
@@ -56,6 +66,8 @@ function onDrop(e, idx) {
   renderList();
   DB.reorderExercises(exercises.map(ex => ({ id: ex.id, order: ex.order })));
 }
+
+// ─── Add exercise ─────────────────────────────────────────────────────────────
 
 document.getElementById('btn-add-ex').addEventListener('click', async () => {
   const msg  = document.getElementById('add-msg');

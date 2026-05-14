@@ -3,10 +3,6 @@ initNav('sessions');
 let allExercises = [];
 let templates = [];
 let editingId = null;
-let dragSrcIdx = null;
-let editDragSrcIdx = null;
-
-// ─── Load exercises for picker ────────────────────────────────────────────────
 
 async function loadExercises() {
   allExercises = (await DB.getExercises()).filter(e => e.active).sort((a,b) => a.order - b.order);
@@ -46,7 +42,7 @@ function renderTemplates() {
     list.innerHTML = '<p class="empty-tpl">Niciun template creat încă.</p>';
     return;
   }
-  list.innerHTML = templates.map((tpl, tplIdx) => {
+  list.innerHTML = templates.map((tpl) => {
     const exNames = tpl.exercise_ids.map(id => {
       const ex = allExercises.find(e => e.id === id);
       return ex ? ex : null;
@@ -59,51 +55,29 @@ function renderTemplates() {
             <div class="tpl-count">${exNames.length} exerciții</div>
           </div>
           <div class="tpl-actions" onclick="event.stopPropagation()">
+            <button class="tpl-btn" onclick="openReorderTpl('${tpl.id}')" title="Reordonează"><i class="ti ti-arrows-sort"></i></button>
             <button class="tpl-btn" onclick="openEdit('${tpl.id}')" title="Editează"><i class="ti ti-pencil"></i></button>
             <button class="tpl-btn del" onclick="deleteTpl('${tpl.id}')" title="Șterge"><i class="ti ti-trash"></i></button>
           </div>
           <i class="ti ti-chevron-right" style="color:var(--text-dim);font-size:14px;transition:transform 0.2s;" id="chevron-${tpl.id}"></i>
         </div>
         <div class="tpl-body" id="tpl-body-${tpl.id}">
-          <div class="tpl-ex-list" id="tpl-ex-list-${tpl.id}">
-            ${renderTplExList(tpl, exNames)}
+          <div class="tpl-ex-list">
+            ${exNames.length
+              ? exNames.map(ex => `
+                <div class="tpl-ex-row">
+                  <div>
+                    <div class="tpl-ex-name">${ex.name}</div>
+                    <div class="tpl-ex-group">${ex.muscle_group || ''}</div>
+                  </div>
+                </div>`).join('')
+              : '<div style="color:var(--text-dim);font-size:12px;font-family:\'DM Mono\',monospace;">Niciun exercițiu.</div>'
+            }
           </div>
         </div>
       </div>
     `;
   }).join('');
-
-  // Touch drag & drop per template
-  templates.forEach(tpl => {
-    const exListEl = document.getElementById(`tpl-ex-list-${tpl.id}`);
-    if (!exListEl) return;
-    enableTouchDrag(exListEl, '.tpl-ex-row', async (fromIdx, toIdx) => {
-      const ids = [...tpl.exercise_ids];
-      const moved = ids.splice(fromIdx, 1)[0];
-      ids.splice(toIdx, 0, moved);
-      tpl.exercise_ids = ids;
-      await DB.updateSessionTemplate(tpl.id, { exercise_ids: ids });
-      renderTemplates();
-    });
-  });
-}
-
-function renderTplExList(tpl, exNames) {
-  if (!exNames.length) return '<div style="color:var(--text-dim);font-size:12px;font-family:\'DM Mono\',monospace;">Niciun exercițiu.</div>';
-  return exNames.map((ex, idx) => `
-    <div class="tpl-ex-row" draggable="true" data-tpl="${tpl.id}" data-idx="${idx}"
-      ondragstart="onTplDragStart(event,'${tpl.id}',${idx})"
-      ondragover="onTplDragOver(event,${idx})"
-      ondragleave="onTplDragLeave(event)"
-      ondrop="onTplDrop(event,'${tpl.id}',${idx})"
-      ondragend="onTplDragEnd(event)">
-      <i class="ti ti-grip-vertical tpl-ex-drag"></i>
-      <div>
-        <div class="tpl-ex-name">${ex.name}</div>
-        <div class="tpl-ex-group">${ex.muscle_group || ''}</div>
-      </div>
-    </div>
-  `).join('');
 }
 
 function toggleTpl(head) {
@@ -115,34 +89,21 @@ function toggleTpl(head) {
   if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(90deg)';
 }
 
-// ─── Drag & drop reorder within template ─────────────────────────────────────
+// ─── Reordonare template ──────────────────────────────────────────────────────
 
-function onTplDragStart(e, tplId, idx) {
-  dragSrcIdx = idx;
-  e.currentTarget.classList.add('dragging');
-  e.dataTransfer.effectAllowed = 'move';
-  e.dataTransfer.setData('tplId', tplId);
-}
-function onTplDragOver(e, idx) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-  if (idx !== dragSrcIdx) e.currentTarget.classList.add('drag-over');
-}
-function onTplDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
-function onTplDragEnd(e)   { e.currentTarget.classList.remove('dragging'); document.querySelectorAll('.tpl-ex-row').forEach(el => el.classList.remove('drag-over')); }
-
-async function onTplDrop(e, tplId, idx) {
-  e.preventDefault();
-  e.currentTarget.classList.remove('drag-over');
-  if (idx === dragSrcIdx) return;
+function openReorderTpl(tplId) {
   const tpl = templates.find(t => t.id === tplId);
   if (!tpl) return;
-  const ids = [...tpl.exercise_ids];
-  const moved = ids.splice(dragSrcIdx, 1)[0];
-  ids.splice(idx, 0, moved);
-  tpl.exercise_ids = ids;
-  await DB.updateSessionTemplate(tplId, { exercise_ids: ids });
-  renderTemplates();
+  const items = tpl.exercise_ids.map(id => {
+    const ex = allExercises.find(e => e.id === id);
+    return ex ? { id: ex.id, label: ex.name, sublabel: ex.muscle_group || '' } : null;
+  }).filter(Boolean);
+
+  openReorderModal(items, async (newIds) => {
+    tpl.exercise_ids = newIds;
+    await DB.updateSessionTemplate(tplId, { exercise_ids: newIds });
+    renderTemplates();
+  });
 }
 
 // ─── Add template ─────────────────────────────────────────────────────────────
@@ -162,8 +123,6 @@ document.getElementById('btn-add-tpl').addEventListener('click', async () => {
     await loadTemplates();
   } catch(e) { msg.textContent = '! Eroare.'; msg.className = 'save-msg err'; }
 });
-
-// ─── Delete template ──────────────────────────────────────────────────────────
 
 async function deleteTpl(id) {
   if (!confirm('Ștergi acest template?')) return;
@@ -204,8 +163,6 @@ document.getElementById('btn-save-edit').addEventListener('click', async () => {
     await loadTemplates();
   } catch(e) { msg.textContent = '! Eroare.'; msg.className = 'save-msg err'; }
 });
-
-// ─── Init ─────────────────────────────────────────────────────────────────────
 
 async function init() {
   await loadExercises();
