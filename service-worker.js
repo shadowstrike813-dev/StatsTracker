@@ -1,4 +1,4 @@
-const CACHE_NAME = 'health-tracker-v6';
+/*const CACHE_NAME = 'health-tracker-v7';
 
 const ASSETS = [
   './index.html',
@@ -23,7 +23,7 @@ const ASSETS = [
   './session-active.js',
   './session-templates.html',
   './session-templates.js',
-  './drag-touch.js',
+  './reorder-modal.js',
   './version.js',
   './nav.css',
   './nav.js',
@@ -87,5 +87,124 @@ self.addEventListener('fetch', (e) => {
         if (fallback) return fallback;
       }
     })
+  );
+});*/
+
+const CACHE_NAME = 'health-tracker-v7';
+
+const STATIC_ASSETS = [
+  './index.html',
+  './home.html',
+  './blood-pressure.html',
+  './blood-pressure.js',
+  './weight.html',
+  './weight.js',
+  './profile.html',
+  './profile.js',
+  './workout.html',
+  './workout.js',
+  './exercise.html',
+  './exercise.js',
+  './configure-exercises.html',
+  './configure-exercises.js',
+  './sleep.html',
+  './sleep.js',
+  './sessions.html',
+  './sessions.js',
+  './session-active.html',
+  './session-active.js',
+  './session-templates.html',
+  './session-templates.js',
+  './reorder-modal.js',
+  './version.js',
+  './nav.css',
+  './nav.js',
+  './style.css',
+  './db.js',
+  './manifest.json',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+];
+
+const CDN_ASSETS = [
+  'https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600&display=swap',
+  'https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css',
+  'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js',
+];
+
+// ─── Install — precache tot ───────────────────────────────────────────────────
+
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(cache =>
+      cache.addAll([...STATIC_ASSETS, ...CDN_ASSETS])
+    )
+  );
+  // Activam imediat noul service worker fara sa asteptam
+  self.skipWaiting();
+});
+
+// ─── Activate — sterge cache-uri vechi si preia controlul imediat ─────────────
+
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
+  );
+});
+
+// ─── Fetch ────────────────────────────────────────────────────────────────────
+
+self.addEventListener('fetch', (e) => {
+  if (e.request.method !== 'GET') return;
+
+  const url = new URL(e.request.url);
+
+  // Ignora extensii de browser
+  if (url.protocol === 'chrome-extension:' || url.protocol === 'moz-extension:') return;
+
+  const isCDN = url.hostname !== self.location.hostname;
+  const filename = url.pathname.split('/').pop() || '';
+  const isAppFile = STATIC_ASSETS.some(a => a.endsWith(filename) || a === './' + filename);
+
+  if (isCDN) {
+    // CDN — cache first (fonturi, Chart.js, icons)
+    e.respondWith(
+      caches.match(e.request).then(cached => {
+        if (cached) return cached;
+        return fetch(e.request).then(res => {
+          if (res && res.status === 200) {
+            caches.open(CACHE_NAME).then(c => c.put(e.request, res.clone()));
+          }
+          return res;
+        });
+      })
+    );
+    return;
+  }
+
+  // Fisiere app — network first, cache fallback
+  e.respondWith(
+    fetch(e.request)
+      .then(res => {
+        if (res && res.status === 200) {
+          const resClone = res.clone();
+          caches.open(CACHE_NAME).then(c => c.put(e.request, resClone));
+        }
+        return res;
+      })
+      .catch(async () => {
+        // Offline — servim din cache
+        const cached = await caches.match(e.request);
+        if (cached) return cached;
+
+        // Fallback HTML
+        if (filename.endsWith('.html') || filename === '') {
+          const htmlMatch = await caches.match('./' + (filename || 'home.html'));
+          if (htmlMatch) return htmlMatch;
+          return caches.match('./home.html');
+        }
+      })
   );
 });

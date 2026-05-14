@@ -6,11 +6,8 @@ let allWorkouts = [];
 let timerInterval = null;
 let notifTimeout = null;
 let notifTimerInterval = null;
-let notifEndTime = null;
 let modalSets = [];
 let modalExId = null;
-let modalExName = null;
-let dragSrcIdx = null;
 let sessionCharts = [];
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
@@ -94,26 +91,11 @@ async function requestNotifPermission() {
 document.getElementById('btn-set-notif').addEventListener('click', async () => {
   const minutes = parseInt(document.getElementById('notif-minutes').value);
   const status  = document.getElementById('notif-status');
-
-  if (!minutes || minutes <= 0) {
-    status.textContent = 'Introdu un număr de minute.';
-    status.className = 'notif-status';
-    return;
-  }
-
+  if (!minutes || minutes <= 0) { status.textContent = 'Introdu un număr de minute.'; status.className = 'notif-status'; return; }
   const granted = await requestNotifPermission();
-  if (!granted) {
-    status.textContent = 'Notificările sunt blocate. Activează-le din setările browserului.';
-    status.className = 'notif-status';
-    return;
-  }
-
-  // Anulam timer anterior
+  if (!granted) { status.textContent = 'Notificările sunt blocate. Activează-le din setările browserului.'; status.className = 'notif-status'; return; }
   if (notifTimeout) { clearTimeout(notifTimeout); clearInterval(notifTimerInterval); }
-
-  notifEndTime = Date.now() + minutes * 60 * 1000;
-
-  // Countdown display
+  const notifEndTime = Date.now() + minutes * 60 * 1000;
   notifTimerInterval = setInterval(() => {
     const remaining = Math.max(0, Math.ceil((notifEndTime - Date.now()) / 1000));
     const m = Math.floor(remaining / 60);
@@ -122,7 +104,6 @@ document.getElementById('btn-set-notif').addEventListener('click', async () => {
     status.className = 'notif-status active';
     if (remaining === 0) clearInterval(notifTimerInterval);
   }, 1000);
-
   notifTimeout = setTimeout(() => {
     clearInterval(notifTimerInterval);
     status.textContent = 'Notificare trimisă!';
@@ -134,7 +115,7 @@ document.getElementById('btn-set-notif').addEventListener('click', async () => {
   }, minutes * 60 * 1000);
 });
 
-// ─── Exercise list with drag & drop ──────────────────────────────────────────
+// ─── Exercise list ────────────────────────────────────────────────────────────
 
 function renderExercises() {
   const list = document.getElementById('active-ex-list');
@@ -152,15 +133,10 @@ function renderExercises() {
     const hasSets   = wo && wo.sets.length > 0;
 
     return `
-      <div class="active-ex-item ${hasSets ? 'has-sets' : ''}" draggable="true" data-idx="${idx}"
-        ondragstart="onExDragStart(event,${idx})"
-        ondragover="onExDragOver(event,${idx})"
-        ondragleave="onExDragLeave(event)"
-        ondrop="onExDrop(event,${idx})"
-        ondragend="onExDragEnd(event)">
+      <div class="active-ex-item ${hasSets ? 'has-sets' : ''}">
         <div class="active-ex-head" onclick="openSetsModal('${exId}')">
-          <div class="ex-drag-handle" onclick="event.stopPropagation()" ondragstart="event.stopPropagation()">
-            <i class="ti ti-grip-vertical"></i>
+          <div class="ex-drag-handle" onclick="event.stopPropagation()">
+            <i class="ti ti-grip-vertical" style="color:var(--text-dim);font-size:18px;"></i>
           </div>
           <div>
             <div class="active-ex-name">${ex.name}</div>
@@ -173,49 +149,34 @@ function renderExercises() {
         </div>
       </div>`;
   }).join('');
+}
 
-  // Touch drag & drop
-  enableTouchDrag(list, '.active-ex-item', async (fromIdx, toIdx) => {
-    const ids = [...session.exercise_ids];
-    const moved = ids.splice(fromIdx, 1)[0];
-    ids.splice(toIdx, 0, moved);
-    session.exercise_ids = ids;
-    await DB.updateSession(session.id, { exercise_ids: ids });
+// ─── Reordonare via modal ─────────────────────────────────────────────────────
+
+document.getElementById('btn-reorder-session').addEventListener('click', () => {
+  const items = (session.exercise_ids || []).map(exId => {
+    const ex = allExercises.find(e => e.id === exId);
+    return ex ? { id: ex.id, label: ex.name, sublabel: ex.muscle_group || '' } : null;
+  }).filter(Boolean);
+
+  openReorderModal(items, async (newIds) => {
+    session.exercise_ids = newIds;
+    await DB.updateSession(session.id, { exercise_ids: newIds });
     renderExercises();
   });
-}
-
-// Drag & drop reorder
-function onExDragStart(e, idx) { dragSrcIdx = idx; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
-function onExDragOver(e, idx)  { e.preventDefault(); if (idx !== dragSrcIdx) e.currentTarget.classList.add('drag-over'); }
-function onExDragLeave(e)      { e.currentTarget.classList.remove('drag-over'); }
-function onExDragEnd(e)        { e.currentTarget.classList.remove('dragging'); document.querySelectorAll('.active-ex-item').forEach(el => el.classList.remove('drag-over')); }
-
-async function onExDrop(e, idx) {
-  e.preventDefault();
-  e.currentTarget.classList.remove('drag-over');
-  if (idx === dragSrcIdx) return;
-  const ids = [...session.exercise_ids];
-  const moved = ids.splice(dragSrcIdx, 1)[0];
-  ids.splice(idx, 0, moved);
-  session.exercise_ids = ids;
-  await DB.updateSession(session.id, { exercise_ids: ids });
-  renderExercises();
-}
+});
 
 // ─── Sets modal ───────────────────────────────────────────────────────────────
 
 function openSetsModal(exId) {
   const ex = allExercises.find(e => e.id === exId);
   if (!ex) return;
-  modalExId   = exId;
-  modalExName = ex.name;
+  modalExId = exId;
 
   document.getElementById('sets-modal-title').textContent = ex.name;
   document.getElementById('sets-modal-meta').textContent  = [ex.muscle_group, ex.type === 'compound' ? 'Compus' : 'Izolat', ex.equipment].filter(Boolean).join(' · ') || 'Exercițiu';
   document.getElementById('modal-err').textContent = '';
 
-  // Incarca seriile existente din sesiunea curenta
   const wo = allWorkouts.find(w => w.exercise_id === exId);
   if (wo) {
     modalSets = wo.sets.map(s => ({ kg: String(s.kg), reps: String(s.reps), warmup: !!s.warmup }));
@@ -288,7 +249,6 @@ document.getElementById('modal-btn-save').addEventListener('click', async () => 
   const notes = document.getElementById('modal-notes').value.trim();
   const today = new Date().toISOString().split('T')[0];
 
-  // Daca exista deja un workout pt acest exercitiu in sesiunea asta, il stergem si adaugam nou
   const existing = allWorkouts.find(w => w.exercise_id === modalExId);
   if (existing) await DB.deleteWorkout(existing.id);
 
@@ -300,7 +260,6 @@ document.getElementById('modal-btn-save').addEventListener('click', async () => 
     session_id:  session.id,
   });
 
-  // Actualizam lista locala
   allWorkouts = allWorkouts.filter(w => w.exercise_id !== modalExId || w.session_id !== session.id);
   allWorkouts.push(workout);
 
@@ -311,7 +270,6 @@ document.getElementById('modal-btn-save').addEventListener('click', async () => 
 // ─── Charts popup ─────────────────────────────────────────────────────────────
 
 document.getElementById('btn-show-charts').addEventListener('click', async () => {
-  // Distruge charturile anterioare
   sessionCharts.forEach(c => c.destroy());
   sessionCharts = [];
 
@@ -322,7 +280,6 @@ document.getElementById('btn-show-charts').addEventListener('click', async () =>
     const ex = allExercises.find(e => e.id === exId);
     if (!ex) continue;
 
-    // Toate workout-urile pentru acest exercitiu (nu doar din sesiunea curenta)
     const workouts = (await DB.getWorkouts(exId)).sort((a,b) => a.date.localeCompare(b.date)).slice(-10);
     if (!workouts.length) continue;
 
@@ -339,7 +296,6 @@ document.getElementById('btn-show-charts').addEventListener('click', async () =>
     `;
     content.appendChild(card);
 
-    // Trebuie sa asteptam ca DOM-ul sa fie randat
     await new Promise(r => setTimeout(r, 30));
 
     const c = new Chart(document.getElementById(canvasId), {
@@ -377,7 +333,5 @@ document.getElementById('btn-close-charts').addEventListener('click', () => {
   sessionCharts.forEach(c => c.destroy());
   sessionCharts = [];
 });
-
-// ─── Start ────────────────────────────────────────────────────────────────────
 
 init();
