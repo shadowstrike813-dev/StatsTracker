@@ -94,10 +94,10 @@
         <div class="section-title" style="margin-bottom: 12px;">Date aplicație</div>
         <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
           <button class="btn-save" id="btn-export" style="background: var(--surface3); color: var(--text); border: 1px solid var(--border2);">
-            <i class="ti ti-download" style="margin-right:5px;"></i> Export date
+            <i class="ti ti-upload" style="margin-right:5px;"></i> Export date
           </button>
           <button class="btn-save" id="btn-import" style="background: var(--surface3); color: var(--text); border: 1px solid var(--border2);">
-            <i class="ti ti-upload" style="margin-right:5px;"></i> Import date
+            <i class="ti ti-download" style="margin-right:5px;"></i> Import date
           </button>
           <input type="file" id="btn-import-file" accept=".json" style="display:none;" />
           <span class="save-msg" id="import-msg"></span>
@@ -110,6 +110,12 @@
 <script src="db.js"></script>
 <script src="nav.js"></script>
 <script src="profile.js"></script>
-
+<script>
+  // Navigare ierarhica: back -> home.html
+  history.pushState({ page: 'profile.html' }, '', location.href);
+  window.addEventListener('popstate', function() {
+    location.replace('home.html');
+  });
+</script>
 </body>
 </html>
