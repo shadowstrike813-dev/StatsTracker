@@ -40,6 +40,14 @@ const CDN_ASSETS = [
   'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js',
 ];
 
+// ─── Message handler — SKIP_WAITING ──────────────────────────────────────────
+
+self.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 // ─── Install — precache tot ───────────────────────────────────────────────────
 
 self.addEventListener('install', (e) => {

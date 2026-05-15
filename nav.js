@@ -6,27 +6,43 @@ function initNav(activePage) {
     document.head.appendChild(vs);
   }
 
-  // ─── Update banner ─────────────────────────────────────────────────────────
+  // ─── Update detection — mobile friendly ────────────────────────────────────
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.ready.then(reg => {
+
+      // Verifica update la fiecare 60 secunde (prinde si telefonul)
+      setInterval(() => reg.update(), 60 * 1000);
+
+      // Cand gaseste un worker nou
       reg.addEventListener('updatefound', () => {
         const newWorker = reg.installing;
+        if (!newWorker) return;
         newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'activated') {
-            showUpdateBanner();
+          // Workerul nou e instalat si gata — il activam imediat
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            // Trimitem mesaj workerului sa faca skipWaiting
+            newWorker.postMessage({ type: 'SKIP_WAITING' });
           }
         });
       });
     });
 
-    // Daca pagina e controlata de un SW nou (dupa skipWaiting + claim)
+    // Cand controllerul s-a schimbat (workerul nou a preluat) — reincarcam automat
+    let refreshing = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      showUpdateBanner();
+      if (refreshing) return;
+      refreshing = true;
+      // Nu reincarcam daca utilizatorul e in mijlocul unei sesiuni active
+      const isActiveSession = window.location.pathname.includes('session-active');
+      if (isActiveSession) {
+        showUpdateBanner(); // pe sesiunea activa doar aratam bannerul
+      } else {
+        location.reload();  // pe orice alta pagina reincarcam automat
+      }
     });
   }
 
   function showUpdateBanner() {
-    // Nu afisam de doua ori
     if (document.getElementById('update-banner')) return;
     const banner = document.createElement('div');
     banner.id = 'update-banner';
