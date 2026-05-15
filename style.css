@@ -2,6 +2,29 @@ header { margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid v
 header h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 4px; }
 header p { font-size: 13px; color: var(--text-muted); font-family: 'DM Mono', monospace; }
 
+/* ─── Page fade in ───────────────────────────────────────────────────────── */
+
+@keyframes page-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.main {
+  animation: page-fade-in 0.25s ease both;
+}
+
+/* ─── Stat card flash ────────────────────────────────────────────────────── */
+
+@keyframes stat-flash {
+  0%   { background: var(--surface); }
+  40%  { background: var(--surface3); }
+  100% { background: var(--surface); }
+}
+
+.stat-card.flash {
+  animation: stat-flash 0.5s ease both;
+}
+
 .section-title {
   font-size: 11px; color: var(--text-muted);
   text-transform: uppercase; letter-spacing: 0.07em;

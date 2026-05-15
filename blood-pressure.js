@@ -19,6 +19,15 @@ function setLoading(on) {
   btn.disabled = on; btn.textContent = on ? 'Se salvează…' : '+ Adaugă';
 }
 
+function flashCard(id) {
+  const card = document.getElementById(id)?.closest('.stat-card');
+  if (!card) return;
+  card.classList.remove('flash');
+  void card.offsetWidth; // forteaza reflow
+  card.classList.add('flash');
+  card.addEventListener('animationend', () => card.classList.remove('flash'), { once: true });
+}
+
 function render(entries) {
   const allSorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
   const sorted = allSorted.slice(-10); // ultimele 10 pentru grafic
@@ -27,6 +36,7 @@ function render(entries) {
     document.getElementById('avg-sys').textContent  = Math.round(allSorted.reduce((s, e) => s + e.sys,  0) / allSorted.length);
     document.getElementById('avg-dia').textContent  = Math.round(allSorted.reduce((s, e) => s + e.dia,  0) / allSorted.length);
     document.getElementById('avg-puls').textContent = Math.round(allSorted.reduce((s, e) => s + e.puls, 0) / allSorted.length);
+    flashCard('avg-sys'); flashCard('avg-dia'); flashCard('avg-puls');
   } else {
     ['avg-sys', 'avg-dia', 'avg-puls'].forEach(id => document.getElementById(id).textContent = '—');
   }

@@ -35,6 +35,15 @@ function getSleepBadge(minutes) {
   return                     { label: 'Insuficient', cls: 'vshort' };
 }
 
+function flashCard(id) {
+  const card = document.getElementById(id)?.closest('.stat-card');
+  if (!card) return;
+  card.classList.remove('flash');
+  void card.offsetWidth;
+  card.classList.add('flash');
+  card.addEventListener('animationend', () => card.classList.remove('flash'), { once: true });
+}
+
 // ─── Render ───────────────────────────────────────────────────────────────────
 
 function render(entries) {
@@ -52,6 +61,7 @@ function render(entries) {
     document.getElementById('avg-duration').textContent  = fmtDurationDecimal(avg);
     document.getElementById('max-duration').textContent  = fmtDurationDecimal(max);
     document.getElementById('total-entries').textContent = sorted.length;
+    flashCard('avg-duration'); flashCard('max-duration'); flashCard('total-entries');
   } else {
     ['avg-duration', 'max-duration', 'total-entries'].forEach(id => document.getElementById(id).textContent = '—');
   }

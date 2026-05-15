@@ -187,6 +187,14 @@ async function loadWorkouts() {
       document.getElementById('stat-sessions').textContent  = allSorted.length;
       document.getElementById('stat-last').textContent      = lastMax + ' kg';
       document.getElementById('stat-last-date').textContent = fmtDate(last.date);
+      ['stat-max','stat-sessions','stat-last'].forEach(id => {
+        const card = document.getElementById(id)?.closest('.stat-card');
+        if (!card) return;
+        card.classList.remove('flash');
+        void card.offsetWidth;
+        card.classList.add('flash');
+        card.addEventListener('animationend', () => card.classList.remove('flash'), { once: true });
+      });
     } else {
       globalPR = 0;
       document.getElementById('stat-max').textContent       = '—';

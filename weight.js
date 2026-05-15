@@ -23,6 +23,15 @@ function bmiLabel(bmi) {
   return 'Obezitate';
 }
 
+function flashCard(id) {
+  const card = document.getElementById(id)?.closest('.stat-card');
+  if (!card) return;
+  card.classList.remove('flash');
+  void card.offsetWidth;
+  card.classList.add('flash');
+  card.addEventListener('animationend', () => card.classList.remove('flash'), { once: true });
+}
+
 function render(entries, targetWeight) {
   const allSorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
   const sorted = allSorted.slice(-10); // ultimele 10 pentru grafic
@@ -47,7 +56,6 @@ function render(entries, targetWeight) {
 
     const lastCard = document.getElementById('last-kg');
     lastCard.textContent = `${last.kg} kg`;
-    // Adaugam delta sub valoare
     let deltaEl = document.getElementById('weight-delta');
     if (!deltaEl) {
       deltaEl = document.createElement('div');
@@ -57,6 +65,7 @@ function render(entries, targetWeight) {
     deltaEl.innerHTML = deltaHtml;
 
     document.getElementById('avg-kg').textContent = `${avg} kg`;
+    flashCard('last-kg'); flashCard('avg-kg'); flashCard('bmi-val');
     if (profileHeight) {
       const bmi = calcBmi(last.kg, profileHeight);
       document.getElementById('bmi-val').textContent   = bmi;
