@@ -6,6 +6,63 @@ function initNav(activePage) {
     document.head.appendChild(vs);
   }
 
+  // ─── Update banner ─────────────────────────────────────────────────────────
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(reg => {
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'activated') {
+            showUpdateBanner();
+          }
+        });
+      });
+    });
+
+    // Daca pagina e controlata de un SW nou (dupa skipWaiting + claim)
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      showUpdateBanner();
+    });
+  }
+
+  function showUpdateBanner() {
+    // Nu afisam de doua ori
+    if (document.getElementById('update-banner')) return;
+    const banner = document.createElement('div');
+    banner.id = 'update-banner';
+    banner.style.cssText = `
+      position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+      background: var(--surface); border: 1px solid var(--border2);
+      border-radius: var(--radius-lg); padding: 12px 20px;
+      display: flex; align-items: center; gap: 14px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      z-index: 1000; font-family: 'DM Mono', monospace; font-size: 13px;
+      color: var(--text); white-space: nowrap;
+      animation: slide-up 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+    `;
+    banner.innerHTML = `
+      <style>
+        @keyframes slide-up {
+          from { opacity:0; transform:translateX(-50%) translateY(16px); }
+          to   { opacity:1; transform:translateX(-50%) translateY(0); }
+        }
+      </style>
+      <i class="ti ti-refresh" style="font-size:16px;color:var(--blue);"></i>
+      <span>Update disponibil</span>
+      <button onclick="location.reload()" style="
+        background:var(--blue); color:#000; border:none;
+        border-radius:var(--radius); padding:6px 14px;
+        font-family:'Syne',sans-serif; font-size:12px; font-weight:600;
+        cursor:pointer;
+      ">Reîncarcă</button>
+      <button onclick="this.closest('#update-banner').remove()" style="
+        background:none; border:none; cursor:pointer;
+        color:var(--text-dim); font-size:18px; line-height:1; padding:2px;
+      ">×</button>
+    `;
+    document.body.appendChild(banner);
+  }
+
   // ─── Top bar ───────────────────────────────────────────────────────────────
   const topbar = document.createElement('div');
   topbar.className = 'nav-topbar';
