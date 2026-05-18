@@ -194,27 +194,33 @@
       <div class="err-msg" id="err-msg"></div>
     </div>
 
-    <!-- Chart -->
+    <!-- Chart 1: durata -->
     <div class="chart-section">
       <div class="chart-header">
-        <div class="section-title">Durată somn (ultimele 14 nopți)</div>
+        <div class="section-title">Durată somn</div>
         <div class="legend">
           <span><span class="leg-dot" style="background:#a78bfa"></span>Ore dormite</span>
           <span><span class="leg-dot" style="background:#4e9eff; border-radius:0; height:2px; width:16px; display:inline-block;"></span>Recomandare 8h</span>
         </div>
       </div>
-      <div class="chart-wrap">
-        <canvas id="sleepChart"></canvas>
+      <!-- scroll stanga/dreapta -->
+      <div id="sleepChartScroll" style="overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch;">
+        <div id="sleepChartWrap" style="height:200px; position:relative;">
+          <canvas id="sleepChart"></canvas>
+        </div>
       </div>
     </div>
 
-    <!-- Distribuție -->
+    <!-- Chart 2: ora culcat vs trezit -->
     <div class="chart-section">
       <div class="chart-header">
-        <div class="section-title">Oră culcat vs Oră trezit (ultimele 14 nopți)</div>
+        <div class="section-title">Oră culcat vs Oră trezit</div>
       </div>
-      <div class="chart-wrap">
-        <canvas id="scheduleChart"></canvas>
+      <!-- scroll stanga/dreapta SI sus/jos -->
+      <div id="scheduleChartScroll" style="overflow:auto; -webkit-overflow-scrolling:touch; max-height:320px;">
+        <div id="scheduleChartWrap" style="height:300px; position:relative;">
+          <canvas id="scheduleChart"></canvas>
+        </div>
       </div>
     </div>
 
@@ -242,6 +248,11 @@
 <script src="db.js"></script>
 <script src="nav.js"></script>
 <script src="sleep.js"></script>
-
+<script>
+  history.pushState({ page: 'sleep.html' }, '', location.href);
+  window.addEventListener('popstate', function() {
+    location.replace('home.html');
+  });
+</script>
 </body>
 </html>

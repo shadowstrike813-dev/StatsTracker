@@ -12,8 +12,7 @@ function setError(msg) { document.getElementById('err-msg').textContent = msg; }
 function calcDurationMinutes(sleepDate, sleepTime, wakeDate, wakeTime) {
   const sleepDt = new Date(`${sleepDate}T${sleepTime}:00`);
   const wakeDt  = new Date(`${wakeDate}T${wakeTime}:00`);
-  const diff = (wakeDt - sleepDt) / 60000; // minute
-  return diff;
+  return (wakeDt - sleepDt) / 60000;
 }
 
 function fmtDuration(minutes) {
@@ -29,10 +28,15 @@ function fmtDurationDecimal(minutes) {
 
 function getSleepBadge(minutes) {
   const h = minutes / 60;
-  if (h >= 9)         return { label: 'Lung',      cls: 'long' };
-  if (h >= 7)         return { label: 'Optim',     cls: 'ok' };
-  if (h >= 6)         return { label: 'Scurt',     cls: 'short' };
-  return                     { label: 'Insuficient', cls: 'vshort' };
+  if (h >= 9)   return { label: 'Lung',        cls: 'long' };
+  if (h >= 7)   return { label: 'Optim',        cls: 'ok' };
+  if (h >= 6)   return { label: 'Scurt',        cls: 'short' };
+  return               { label: 'Insuficient',  cls: 'vshort' };
+}
+
+function timeToDecimal(timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  return h + m / 60;
 }
 
 function flashCard(id) {
@@ -42,6 +46,20 @@ function flashCard(id) {
   void card.offsetWidth;
   card.classList.add('flash');
   card.addEventListener('animationend', () => card.classList.remove('flash'), { once: true });
+}
+
+// ─── Scroll chart wrapper ─────────────────────────────────────────────────────
+// Fiecare punct ocupa BAR_W px latime, minim container e 100%
+
+const BAR_W = 48; // px per punct de date
+
+function setChartWidth(wrapperId, dataLen) {
+  const wrapper = document.getElementById(wrapperId);
+  if (!wrapper) return;
+  const minW = wrapper.parentElement.offsetWidth || 300;
+  const calcW = dataLen * BAR_W;
+  wrapper.style.width  = Math.max(minW, calcW) + 'px';
+  wrapper.style.height = '100%';
 }
 
 // ─── Render ───────────────────────────────────────────────────────────────────
@@ -86,181 +104,200 @@ function render(entries) {
     }).join('');
   }
 
-  // Charts — ultimele 14
-  const recent = sorted.slice(-14);
+  // Charts — toate inregistrarile, nu doar 14
   if (chart) chart.destroy();
   if (scheduleChart) scheduleChart.destroy();
 
-  if (recent.length) {
-    const labels    = recent.map(e => fmtDate(e.wake_date));
-    const durations = recent.map(e => parseFloat(fmtDurationDecimal(
-      calcDurationMinutes(e.sleep_date, e.sleep_time, e.wake_date, e.wake_time)
-    )));
+  if (!sorted.length) return;
 
-    // ── Chart 1: durată ──────────────────────────────────────────────────────
-    chart = new Chart(document.getElementById('sleepChart'), {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [
-          {
-            label: 'Ore dormite',
-            data: durations,
-            backgroundColor: durations.map(d =>
-              d >= 7 ? 'rgba(167,139,250,0.7)' : d >= 6 ? 'rgba(251,191,36,0.7)' : 'rgba(248,113,113,0.7)'
-            ),
-            borderColor: durations.map(d =>
-              d >= 7 ? '#a78bfa' : d >= 6 ? '#fbbf24' : '#f87171'
-            ),
-            borderWidth: 1,
-            borderRadius: 6,
-          },
-          {
-            label: 'Recomandare 8h',
-            data: recent.map(() => 8),
-            type: 'line',
-            borderColor: '#4e9eff',
-            borderDash: [6, 4],
-            borderWidth: 1.5,
-            pointRadius: 0,
-            fill: false,
-            tension: 0,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: '#1e2026',
-            borderColor: 'rgba(255,255,255,0.1)',
-            borderWidth: 1,
-            titleColor: '#7a7d87',
-            bodyColor: '#e8e9ec',
-            padding: 10,
-            cornerRadius: 8,
-            callbacks: {
-              label: (ctx) => {
-                if (ctx.dataset.label === 'Recomandare 8h') return '8h recomandat';
-                const h = Math.floor(ctx.raw);
-                const m = Math.round((ctx.raw - h) * 60);
-                return `${h}h ${m}m dormite`;
-              },
+  const labels    = sorted.map(e => fmtDate(e.wake_date));
+  const durations = sorted.map(e => parseFloat(fmtDurationDecimal(
+    calcDurationMinutes(e.sleep_date, e.sleep_time, e.wake_date, e.wake_time)
+  )));
+
+  // ── Chart 1: durată — scroll stanga/dreapta ──────────────────────────────
+  setChartWidth('sleepChartWrap', sorted.length);
+
+  chart = new Chart(document.getElementById('sleepChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Ore dormite',
+          data: durations,
+          backgroundColor: durations.map(d =>
+            d >= 7 ? 'rgba(167,139,250,0.7)' : d >= 6 ? 'rgba(251,191,36,0.7)' : 'rgba(248,113,113,0.7)'
+          ),
+          borderColor: durations.map(d =>
+            d >= 7 ? '#a78bfa' : d >= 6 ? '#fbbf24' : '#f87171'
+          ),
+          borderWidth: 1,
+          borderRadius: 6,
+        },
+        {
+          label: 'Recomandare 8h',
+          data: sorted.map(() => 8),
+          type: 'line',
+          borderColor: '#4e9eff',
+          borderDash: [6, 4],
+          borderWidth: 1.5,
+          pointRadius: 0,
+          fill: false,
+          tension: 0,
+        },
+      ],
+    },
+    options: {
+      responsive: false, // dezactivam responsive ca sa controlam noi latimea
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e2026',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          titleColor: '#7a7d87',
+          bodyColor: '#e8e9ec',
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: {
+            label: (ctx) => {
+              if (ctx.dataset.label === 'Recomandare 8h') return '8h recomandat';
+              const h = Math.floor(ctx.raw);
+              const m = Math.round((ctx.raw - h) * 60);
+              return `${h}h ${m}m dormite`;
             },
           },
         },
-        scales: {
-          y: {
-            min: 0, max: 12,
-            grid: { color: 'rgba(255,255,255,0.05)' },
-            ticks: { color: '#4a4d57', font: { family: 'DM Mono', size: 11 }, callback: v => `${v}h` },
-            border: { color: 'transparent' },
-          },
-          x: {
-            grid: { display: false },
-            ticks: { color: '#4a4d57', font: { family: 'DM Mono', size: 11 }, maxRotation: 30 },
-            border: { color: 'rgba(255,255,255,0.07)' },
-          },
+      },
+      scales: {
+        y: {
+          min: 0, max: 12,
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: { color: '#4a4d57', font: { family: 'DM Mono', size: 11 }, callback: v => `${v}h` },
+          border: { color: 'transparent' },
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: '#4a4d57', font: { family: 'DM Mono', size: 11 }, maxRotation: 30 },
+          border: { color: 'rgba(255,255,255,0.07)' },
         },
       },
-    });
+    },
+  });
 
-    // ── Chart 2: oră culcat vs oră trezit ────────────────────────────────────
-    // Convertim ora culcat si ora trezit in ore decimale (0-24)
-    // Ora culcat poate fi seara (ex: 23.5) sau dupa miezul noptii (ex: 1.5 -> afisam ca 25.5 pt continuitate)
-    function timeToDecimal(timeStr) {
-      const [h, m] = timeStr.split(':').map(Number);
-      return h + m / 60;
-    }
+  // ── Chart 2: ora culcat vs ora trezit — scroll stanga/dreapta + sus/jos ──
 
-    const sleepTimes = recent.map(e => {
-      let t = timeToDecimal(e.sleep_time);
-      // Daca e dimineata devreme (< 12), probabil e dupa miezul noptii → adaugam 24
-      if (t < 12) t += 24;
-      return t;
-    });
+  const sleepTimes = sorted.map(e => {
+    let t = timeToDecimal(e.sleep_time);
+    if (t < 12) t += 24; // dupa miezul noptii → 25, 26...
+    return t;
+  });
 
-    const wakeTimes = recent.map(e => {
-      let st = timeToDecimal(e.sleep_time);
-      let wt = timeToDecimal(e.wake_time);
-      if (st < 12) st += 24;
-      // Daca wake < sleep (corectie pt miezul noptii), adaugam 24 la wake
-      if (wt <= st - 24) wt += 24;
-      else if (wt < st - 12) wt += 24;
-      // Normalizam: wake trebuie sa fie > sleep
-      if (wt < st) wt += 24;
-      return wt;
-    });
+  const wakeTimes = sorted.map(e => {
+    let st = timeToDecimal(e.sleep_time);
+    let wt = timeToDecimal(e.wake_time);
+    if (st < 12) st += 24;
+    if (wt < st - 12) wt += 24;
+    if (wt < st) wt += 24;
+    return wt;
+  });
 
-    scheduleChart = new Chart(document.getElementById('scheduleChart'), {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [
-          {
-            label: 'Culcat',
-            data: sleepTimes.map((t, i) => [t, wakeTimes[i]]),
-            backgroundColor: 'rgba(167,139,250,0.5)',
-            borderColor: '#a78bfa',
-            borderWidth: 1,
-            borderRadius: 4,
-            borderSkipped: false,
-          },
-        ],
-      },
-      options: {
-        indexAxis: 'x',
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: '#1e2026',
-            borderColor: 'rgba(255,255,255,0.1)',
-            borderWidth: 1,
-            titleColor: '#7a7d87',
-            bodyColor: '#e8e9ec',
-            padding: 10,
-            cornerRadius: 8,
-            callbacks: {
-              label: (ctx) => {
-                const [s, w] = ctx.raw;
-                const fmt = h => {
-                  const hh = Math.floor(h % 24);
-                  const mm = Math.round((h - Math.floor(h)) * 60);
-                  return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
-                };
-                return `${fmt(s)} → ${fmt(w)}`;
-              },
+  // ── Calculeaza axa Y centrata pe media orelor ──────────────────────────────
+  const allTimes  = [...sleepTimes, ...wakeTimes];
+  const avgCenter = allTimes.reduce((s, t) => s + t, 0) / allTimes.length;
+  const minTime   = Math.min(...allTimes);
+  const maxTime   = Math.max(...allTimes);
+  // Padding de 1.5h sus/jos pentru context
+  const padding   = 1.5;
+  // Centram pe avgCenter dar nu taiem niciodata datele
+  const halfRange = Math.max(
+    avgCenter - minTime + padding,
+    maxTime - avgCenter + padding,
+    3 // minim 3h vizibil
+  );
+  const yMin = Math.floor(avgCenter - halfRange);
+  const yMax = Math.ceil(avgCenter + halfRange);
+
+  // Numarul de ticks — unul per ora in range
+  const tickCount = yMax - yMin;
+
+  setChartWidth('scheduleChartWrap', sorted.length);
+
+  scheduleChart = new Chart(document.getElementById('scheduleChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Somn',
+          data: sleepTimes.map((t, i) => [t, wakeTimes[i]]),
+          backgroundColor: 'rgba(167,139,250,0.5)',
+          borderColor: '#a78bfa',
+          borderWidth: 1,
+          borderRadius: 4,
+          borderSkipped: false,
+        },
+      ],
+    },
+    options: {
+      responsive: false,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e2026',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          titleColor: '#7a7d87',
+          bodyColor: '#e8e9ec',
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: {
+            label: (ctx) => {
+              const [s, w] = ctx.raw;
+              const fmt = h => {
+                const hh = Math.floor(h % 24);
+                const mm = Math.round((h - Math.floor(h)) * 60);
+                return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+              };
+              return `${fmt(s)} → ${fmt(w)}`;
             },
           },
         },
-        scales: {
-          y: {
-            min: 18, max: 32, // 18:00 -> 08:00 (32 = 8 + 24)
-            grid: { color: 'rgba(255,255,255,0.05)' },
-            ticks: {
-              color: '#4a4d57',
-              font: { family: 'DM Mono', size: 11 },
-              stepSize: 1,
-              callback: v => {
-                const hh = Math.floor(v % 24);
-                return `${String(hh).padStart(2,'0')}:00`;
-              },
+      },
+      scales: {
+        y: {
+          min: yMin,
+          max: yMax,
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: {
+            color: '#4a4d57',
+            font: { family: 'DM Mono', size: 11 },
+            stepSize: 1,
+            callback: v => {
+              if (!Number.isInteger(v)) return '';
+              const hh = Math.floor(v % 24);
+              return `${String(hh).padStart(2,'0')}:00`;
             },
-            border: { color: 'transparent' },
           },
-          x: {
-            grid: { display: false },
-            ticks: { color: '#4a4d57', font: { family: 'DM Mono', size: 11 }, maxRotation: 30 },
-            border: { color: 'rgba(255,255,255,0.07)' },
-          },
+          border: { color: 'transparent' },
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: '#4a4d57', font: { family: 'DM Mono', size: 11 }, maxRotation: 30 },
+          border: { color: 'rgba(255,255,255,0.07)' },
         },
       },
-    });
-  }
+    },
+  });
+
+  // Scroll automat la cel mai recent punct (dreapta)
+  const scroll1 = document.getElementById('sleepChartScroll');
+  const scroll2 = document.getElementById('scheduleChartScroll');
+  if (scroll1) setTimeout(() => { scroll1.scrollLeft = scroll1.scrollWidth; }, 50);
+  if (scroll2) setTimeout(() => { scroll2.scrollLeft = scroll2.scrollWidth; }, 50);
 }
 
 // ─── Load ─────────────────────────────────────────────────────────────────────
@@ -291,7 +328,6 @@ async function handleAdd() {
 
   try {
     await DB.addSleep({ sleep_date: sleepDate, sleep_time: sleepTime, wake_date: wakeDate, wake_time: wakeTime });
-    // Reset form — păstrăm datele pentru comoditate, doar ora
     document.getElementById('inp-sleep-time').value = '';
     document.getElementById('inp-wake-time').value  = '';
     await loadAndRender();
@@ -308,7 +344,7 @@ async function handleDelete(id) {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
-const today    = new Date().toISOString().split('T')[0];
+const today     = new Date().toISOString().split('T')[0];
 const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 document.getElementById('inp-sleep-date').value = yesterday;
 document.getElementById('inp-wake-date').value  = today;
