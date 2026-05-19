@@ -30,7 +30,7 @@ function flashCard(id) {
 
 function render(entries) {
   const allSorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
-  const sorted = allSorted.slice(-10); // ultimele 10 pentru grafic
+  const sorted = allSorted; // toate inregistrarile in grafic
 
   if (allSorted.length) {
     document.getElementById('avg-sys').textContent  = Math.round(allSorted.reduce((s, e) => s + e.sys,  0) / allSorted.length);
@@ -78,6 +78,15 @@ function render(entries) {
 
   if (chart) chart.destroy();
   if (sorted.length) {
+    const BAR_W = 52;
+    const wrap  = document.getElementById('bpChartWrap');
+    const scroll = document.getElementById('bpChartScroll');
+    if (wrap && scroll) {
+      const minW = scroll.offsetWidth || 300;
+      wrap.style.width  = Math.max(minW, sorted.length * BAR_W) + 'px';
+      wrap.style.height = '200px';
+    }
+
     chart = new Chart(document.getElementById('bpChart'), {
       type: 'line',
       data: {
@@ -89,7 +98,8 @@ function render(entries) {
         ],
       },
       options: {
-        responsive: true, maintainAspectRatio: false,
+        responsive: false,
+        maintainAspectRatio: false,
         plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1e2026', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#7a7d87', bodyColor: '#e8e9ec', padding: 10, cornerRadius: 8 } },
         scales: {
           y: { min: 50, max: 170, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#4a4d57', font: { family: 'DM Mono', size: 11 } }, border: { color: 'transparent' } },
@@ -97,6 +107,10 @@ function render(entries) {
         },
       },
     });
+
+    // Scroll la cel mai recent punct
+    const scrollEl = document.getElementById('bpChartScroll');
+    if (scrollEl) setTimeout(() => { scrollEl.scrollLeft = scrollEl.scrollWidth; }, 50);
   }
 }
 

@@ -110,6 +110,17 @@
     font-family: 'DM Mono', monospace;
   }
 
+  /* ─── Scrollable charts — ascunde scrollbar ─── */
+  #sleepChartScroll,
+  #scheduleChartScroll {
+    scrollbar-width: none;        /* Firefox */
+    -ms-overflow-style: none;     /* IE / Edge vechi */
+  }
+  #sleepChartScroll::-webkit-scrollbar,
+  #scheduleChartScroll::-webkit-scrollbar {
+    display: none;                /* Chrome / Safari / mobile */
+  }
+
   /* ─── Stat card purple ─── */
   .stat-value.purple { color: #a78bfa; }
 
