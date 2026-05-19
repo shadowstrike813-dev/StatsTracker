@@ -78,13 +78,19 @@ function render(entries) {
 
   if (chart) chart.destroy();
   if (sorted.length) {
-    const BAR_W = 52;
-    const wrap  = document.getElementById('bpChartWrap');
+    const BAR_W  = 52;
     const scroll = document.getElementById('bpChartScroll');
-    if (wrap && scroll) {
+    const wrap   = document.getElementById('bpChartWrap');
+    const canvas = document.getElementById('bpChart');
+    if (scroll && wrap && canvas) {
       const minW = scroll.offsetWidth || 300;
-      wrap.style.width  = Math.max(minW, sorted.length * BAR_W) + 'px';
-      wrap.style.height = '200px';
+      const w    = Math.max(minW, sorted.length * BAR_W);
+      wrap.style.width   = w + 'px';
+      wrap.style.height  = '200px';
+      canvas.width       = w;
+      canvas.height      = 200;
+      canvas.style.width  = w + 'px';
+      canvas.style.height = '200px';
     }
 
     chart = new Chart(document.getElementById('bpChart'), {
