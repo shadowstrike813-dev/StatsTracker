@@ -1,7 +1,7 @@
 // ─── IndexedDB setup ──────────────────────────────────────────────────────────
 
 const DB_NAME    = 'health-tracker';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 const STORES = {
   entries:           { keyPath: 'id' },
@@ -12,6 +12,7 @@ const STORES = {
   sleep:             { keyPath: 'id' },
   session_templates: { keyPath: 'id' },
   sessions:          { keyPath: 'id' },
+  sleep_session:     { keyPath: 'id' },
 };
 
 let _db = null;
@@ -214,6 +215,32 @@ const DB = {
 
   deleteWorkout: (id) => remove('workouts', id),
 
+  // ── Sleep Session (activa) ────────────────────────────────────────────────────
+
+  getActiveSleepSession: async () => {
+    const records = await all('sleep_session');
+    return records.find(s => s.status === 'active') || null;
+  },
+
+  startSleepSession: async () => {
+    // Stergem orice sesiune activa anterioara
+    const records = await all('sleep_session');
+    for (const r of records.filter(s => s.status === 'active')) {
+      await remove('sleep_session', r.id);
+    }
+    const session = {
+      id:          uuid(),
+      sleep_start: new Date().toISOString(),
+      status:      'active',
+    };
+    await put('sleep_session', session);
+    return session;
+  },
+
+  endSleepSession: async (sessionId) => {
+    await remove('sleep_session', sessionId);
+  },
+
   // ── Sleep ────────────────────────────────────────────────────────────────────
 
   getSleep: () => all('sleep'),
@@ -308,11 +335,12 @@ const DB = {
       sleep:             await all('sleep'),
       session_templates: await all('session_templates'),
       sessions:          await all('sessions'),
+      sleep_session:     await all('sleep_session'),
     };
   },
 
   importAll: async (json) => {
-    const stores = ['entries', 'weight', 'profile', 'exercises', 'workouts', 'sleep', 'session_templates', 'sessions'];
+    const stores = ['entries', 'weight', 'profile', 'exercises', 'workouts', 'sleep', 'session_templates', 'sessions', 'sleep_session'];
     for (const store of stores) {
       await clear(store);
       if (Array.isArray(json[store])) {

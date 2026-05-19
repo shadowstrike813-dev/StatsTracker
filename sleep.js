@@ -2,6 +2,8 @@ initNav('sleep');
 
 let chart = null;
 let scheduleChart = null;
+let timerInterval = null;
+let activeSleepSession = null;
 
 function fmtDate(d) { const [y, m, day] = d.split('-'); return `${day}.${m}.${y}`; }
 function fmtTime(t) { return t ? t.slice(0, 5) : '—'; }
@@ -28,10 +30,10 @@ function fmtDurationDecimal(minutes) {
 
 function getSleepBadge(minutes) {
   const h = minutes / 60;
-  if (h >= 9)   return { label: 'Lung',        cls: 'long' };
-  if (h >= 7)   return { label: 'Optim',        cls: 'ok' };
-  if (h >= 6)   return { label: 'Scurt',        cls: 'short' };
-  return               { label: 'Insuficient',  cls: 'vshort' };
+  if (h >= 9)   return { label: 'Lung',       cls: 'long' };
+  if (h >= 7)   return { label: 'Optim',      cls: 'ok' };
+  if (h >= 6)   return { label: 'Scurt',      cls: 'short' };
+  return               { label: 'Insuficient', cls: 'vshort' };
 }
 
 function timeToDecimal(timeStr) {
@@ -48,17 +50,94 @@ function flashCard(id) {
   card.addEventListener('animationend', () => card.classList.remove('flash'), { once: true });
 }
 
-// ─── Scroll chart wrapper ─────────────────────────────────────────────────────
-// Fiecare punct ocupa BAR_W px latime, minim container e 100%
+// ─── Active sleep session UI ──────────────────────────────────────────────────
 
-const BAR_W = 48; // px per punct de date
+function updateActiveUI() {
+  const activeSection = document.getElementById('sleep-active-section');
+  const timerEl       = document.getElementById('sleep-active-timer');
+  const btnSleep      = document.getElementById('btn-sleep-now');
+  const btnWake       = document.getElementById('btn-wake-now');
+
+  if (activeSleepSession) {
+    activeSection.style.display = 'block';
+    btnSleep.style.display = 'none';
+    btnWake.style.display  = 'flex';
+    startLiveTimer();
+  } else {
+    activeSection.style.display = 'none';
+    btnSleep.style.display = 'flex';
+    btnWake.style.display  = 'none';
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    if (timerEl) timerEl.textContent = '00:00:00';
+  }
+}
+
+function startLiveTimer() {
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(updateTimer, 1000);
+  updateTimer();
+}
+
+function updateTimer() {
+  if (!activeSleepSession) return;
+  const elapsed = Math.floor((Date.now() - new Date(activeSleepSession.sleep_start).getTime()) / 1000);
+  const h = Math.floor(elapsed / 3600);
+  const m = Math.floor((elapsed % 3600) / 60);
+  const s = elapsed % 60;
+  const el = document.getElementById('sleep-active-timer');
+  if (el) el.textContent =
+    `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+// ─── Buton Mă culc acum ───────────────────────────────────────────────────────
+
+document.getElementById('btn-sleep-now').addEventListener('click', async () => {
+  activeSleepSession = await DB.startSleepSession();
+  // Aratam indicatorul in nav
+  const navEl = document.getElementById('nav-active-sleep');
+  if (navEl) navEl.style.display = 'flex';
+  updateActiveUI();
+});
+
+// ─── Buton M-am trezit ────────────────────────────────────────────────────────
+
+document.getElementById('btn-wake-now').addEventListener('click', async () => {
+  if (!activeSleepSession) return;
+
+  const wakeNow  = new Date();
+  const sleepDt  = new Date(activeSleepSession.sleep_start);
+
+  const sleepDate = sleepDt.toISOString().split('T')[0];
+  const sleepTime = `${String(sleepDt.getHours()).padStart(2,'0')}:${String(sleepDt.getMinutes()).padStart(2,'0')}`;
+  const wakeDate  = wakeNow.toISOString().split('T')[0];
+  const wakeTime  = `${String(wakeNow.getHours()).padStart(2,'0')}:${String(wakeNow.getMinutes()).padStart(2,'0')}`;
+
+  const mins = calcDurationMinutes(sleepDate, sleepTime, wakeDate, wakeTime);
+  if (mins <= 0 || mins > 24 * 60) {
+    setError('! Durată invalidă.'); return;
+  }
+
+  try {
+    await DB.addSleep({ sleep_date: sleepDate, sleep_time: sleepTime, wake_date: wakeDate, wake_time: wakeTime });
+    await DB.endSleepSession(activeSleepSession.id);
+    activeSleepSession = null;
+    // Ascundem indicatorul din nav
+    const navEl = document.getElementById('nav-active-sleep');
+    if (navEl) navEl.style.display = 'none';
+    updateActiveUI();
+    await loadAndRender();
+  } catch(err) { setError('! Eroare la salvare.'); }
+});
+
+// ─── Chart width helper ───────────────────────────────────────────────────────
+
+const BAR_W = 48;
 
 function setChartWidth(wrapperId, dataLen) {
   const wrapper = document.getElementById(wrapperId);
   if (!wrapper) return;
   const minW = wrapper.parentElement.offsetWidth || 300;
-  const calcW = dataLen * BAR_W;
-  wrapper.style.width  = Math.max(minW, calcW) + 'px';
+  wrapper.style.width  = Math.max(minW, dataLen * BAR_W) + 'px';
   wrapper.style.height = '100%';
 }
 
@@ -104,10 +183,8 @@ function render(entries) {
     }).join('');
   }
 
-  // Charts — toate inregistrarile, nu doar 14
   if (chart) chart.destroy();
   if (scheduleChart) scheduleChart.destroy();
-
   if (!sorted.length) return;
 
   const labels    = sorted.map(e => fmtDate(e.wake_date));
@@ -115,7 +192,7 @@ function render(entries) {
     calcDurationMinutes(e.sleep_date, e.sleep_time, e.wake_date, e.wake_time)
   )));
 
-  // ── Chart 1: durată — scroll stanga/dreapta ──────────────────────────────
+  // ── Chart 1: durată ──────────────────────────────────────────────────────────
   setChartWidth('sleepChartWrap', sorted.length);
 
   chart = new Chart(document.getElementById('sleepChart'), {
@@ -149,18 +226,13 @@ function render(entries) {
       ],
     },
     options: {
-      responsive: false, // dezactivam responsive ca sa controlam noi latimea
+      responsive: false,
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: '#1e2026',
-          borderColor: 'rgba(255,255,255,0.1)',
-          borderWidth: 1,
-          titleColor: '#7a7d87',
-          bodyColor: '#e8e9ec',
-          padding: 10,
-          cornerRadius: 8,
+          backgroundColor: '#1e2026', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1,
+          titleColor: '#7a7d87', bodyColor: '#e8e9ec', padding: 10, cornerRadius: 8,
           callbacks: {
             label: (ctx) => {
               if (ctx.dataset.label === 'Recomandare 8h') return '8h recomandat';
@@ -187,11 +259,10 @@ function render(entries) {
     },
   });
 
-  // ── Chart 2: ora culcat vs ora trezit — scroll stanga/dreapta + sus/jos ──
-
+  // ── Chart 2: ora culcat vs trezit ────────────────────────────────────────────
   const sleepTimes = sorted.map(e => {
     let t = timeToDecimal(e.sleep_time);
-    if (t < 12) t += 24; // dupa miezul noptii → 25, 26...
+    if (t < 12) t += 24;
     return t;
   });
 
@@ -204,24 +275,14 @@ function render(entries) {
     return wt;
   });
 
-  // ── Calculeaza axa Y centrata pe media orelor ──────────────────────────────
   const allTimes  = [...sleepTimes, ...wakeTimes];
   const avgCenter = allTimes.reduce((s, t) => s + t, 0) / allTimes.length;
   const minTime   = Math.min(...allTimes);
   const maxTime   = Math.max(...allTimes);
-  // Padding de 1.5h sus/jos pentru context
   const padding   = 1.5;
-  // Centram pe avgCenter dar nu taiem niciodata datele
-  const halfRange = Math.max(
-    avgCenter - minTime + padding,
-    maxTime - avgCenter + padding,
-    3 // minim 3h vizibil
-  );
+  const halfRange = Math.max(avgCenter - minTime + padding, maxTime - avgCenter + padding, 3);
   const yMin = Math.floor(avgCenter - halfRange);
   const yMax = Math.ceil(avgCenter + halfRange);
-
-  // Numarul de ticks — unul per ora in range
-  const tickCount = yMax - yMin;
 
   setChartWidth('scheduleChartWrap', sorted.length);
 
@@ -229,17 +290,15 @@ function render(entries) {
     type: 'bar',
     data: {
       labels,
-      datasets: [
-        {
-          label: 'Somn',
-          data: sleepTimes.map((t, i) => [t, wakeTimes[i]]),
-          backgroundColor: 'rgba(167,139,250,0.5)',
-          borderColor: '#a78bfa',
-          borderWidth: 1,
-          borderRadius: 4,
-          borderSkipped: false,
-        },
-      ],
+      datasets: [{
+        label: 'Somn',
+        data: sleepTimes.map((t, i) => [t, wakeTimes[i]]),
+        backgroundColor: 'rgba(167,139,250,0.5)',
+        borderColor: '#a78bfa',
+        borderWidth: 1,
+        borderRadius: 4,
+        borderSkipped: false,
+      }],
     },
     options: {
       responsive: false,
@@ -247,13 +306,8 @@ function render(entries) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: '#1e2026',
-          borderColor: 'rgba(255,255,255,0.1)',
-          borderWidth: 1,
-          titleColor: '#7a7d87',
-          bodyColor: '#e8e9ec',
-          padding: 10,
-          cornerRadius: 8,
+          backgroundColor: '#1e2026', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1,
+          titleColor: '#7a7d87', bodyColor: '#e8e9ec', padding: 10, cornerRadius: 8,
           callbacks: {
             label: (ctx) => {
               const [s, w] = ctx.raw;
@@ -269,17 +323,13 @@ function render(entries) {
       },
       scales: {
         y: {
-          min: yMin,
-          max: yMax,
+          min: yMin, max: yMax,
           grid: { color: 'rgba(255,255,255,0.05)' },
           ticks: {
-            color: '#4a4d57',
-            font: { family: 'DM Mono', size: 11 },
-            stepSize: 1,
+            color: '#4a4d57', font: { family: 'DM Mono', size: 11 }, stepSize: 1,
             callback: v => {
               if (!Number.isInteger(v)) return '';
-              const hh = Math.floor(v % 24);
-              return `${String(hh).padStart(2,'0')}:00`;
+              return `${String(Math.floor(v % 24)).padStart(2,'0')}:00`;
             },
           },
           border: { color: 'transparent' },
@@ -293,11 +343,11 @@ function render(entries) {
     },
   });
 
-  // Scroll automat la cel mai recent punct (dreapta)
-  const scroll1 = document.getElementById('sleepChartScroll');
-  const scroll2 = document.getElementById('scheduleChartScroll');
-  if (scroll1) setTimeout(() => { scroll1.scrollLeft = scroll1.scrollWidth; }, 50);
-  if (scroll2) setTimeout(() => { scroll2.scrollLeft = scroll2.scrollWidth; }, 50);
+  // Scroll la cel mai recent
+  const s1 = document.getElementById('sleepChartScroll');
+  const s2 = document.getElementById('scheduleChartScroll');
+  if (s1) setTimeout(() => { s1.scrollLeft = s1.scrollWidth; }, 50);
+  if (s2) setTimeout(() => { s2.scrollLeft = s2.scrollWidth; }, 50);
 }
 
 // ─── Load ─────────────────────────────────────────────────────────────────────
@@ -309,7 +359,7 @@ async function loadAndRender() {
   } catch (err) { setError('! Eroare la încărcare.'); }
 }
 
-// ─── Add ──────────────────────────────────────────────────────────────────────
+// ─── Manual add ───────────────────────────────────────────────────────────────
 
 async function handleAdd() {
   setError('');
@@ -321,7 +371,6 @@ async function handleAdd() {
   if (!sleepDate || !sleepTime || !wakeDate || !wakeTime) {
     setError('! Completează toate câmpurile.'); return;
   }
-
   const mins = calcDurationMinutes(sleepDate, sleepTime, wakeDate, wakeTime);
   if (mins <= 0) { setError('! Ora de trezire trebuie să fie după ora de culcare.'); return; }
   if (mins > 24 * 60) { setError('! Durata nu poate depăși 24 de ore.'); return; }
@@ -344,9 +393,17 @@ async function handleDelete(id) {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
-const today     = new Date().toISOString().split('T')[0];
-const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-document.getElementById('inp-sleep-date').value = yesterday;
-document.getElementById('inp-wake-date').value  = today;
-document.getElementById('btn-add').addEventListener('click', handleAdd);
-loadAndRender();
+async function init() {
+  activeSleepSession = await DB.getActiveSleepSession();
+  updateActiveUI();
+
+  const today     = new Date().toISOString().split('T')[0];
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  document.getElementById('inp-sleep-date').value = yesterday;
+  document.getElementById('inp-wake-date').value  = today;
+  document.getElementById('btn-add').addEventListener('click', handleAdd);
+
+  await loadAndRender();
+}
+
+init();

@@ -11,115 +11,106 @@
 <link rel="stylesheet" href="style.css" />
 
 <style>
+  /* ─── Active sleep session ─── */
+  .sleep-active-bar {
+    background: var(--surface);
+    border: 1px solid rgba(251,191,36,0.3);
+    border-radius: var(--radius-lg);
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    display: none;
+  }
+
+  .sleep-active-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .sleep-active-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--amber);
+  }
+
+  .sleep-active-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--amber);
+    animation: pulse-amber 2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes pulse-amber {
+    0%,100% { opacity:1; transform:scale(1); }
+    50%      { opacity:0.4; transform:scale(0.7); }
+  }
+
+  .sleep-active-timer {
+    font-size: 28px;
+    font-weight: 600;
+    font-family: 'DM Mono', monospace;
+    color: var(--amber);
+    letter-spacing: 0.05em;
+    margin-top: 8px;
+  }
+
+  /* ─── Butoane sleep ─── */
+  .btn-sleep-now {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--amber); color: #000; border: none;
+    border-radius: var(--radius); padding: 10px 20px;
+    font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: opacity 0.15s; margin-bottom: 1.5rem;
+  }
+  .btn-sleep-now:hover { opacity: 0.85; }
+
+  .btn-wake-now {
+    display: none; align-items: center; gap: 7px;
+    background: var(--green); color: #000; border: none;
+    border-radius: var(--radius); padding: 10px 20px;
+    font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: opacity 0.15s;
+  }
+  .btn-wake-now:hover { opacity: 0.85; }
+
   /* ─── Sleep form ─── */
   .sleep-form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 12px;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 16px; margin-bottom: 12px;
   }
 
-  .sleep-field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
+  .sleep-field { display: flex; flex-direction: column; gap: 6px; }
   .sleep-field label {
-    font-size: 11px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
+    font-size: 11px; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.07em;
     font-family: 'DM Mono', monospace;
   }
-
   .sleep-field input {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text);
-    font-family: 'DM Mono', monospace;
-    font-size: 13px;
-    padding: 8px 10px;
-    width: 100%;
-    transition: border-color 0.15s;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 13px;
+    padding: 8px 10px; width: 100%; transition: border-color 0.15s;
   }
   .sleep-field input:focus { outline: none; border-color: var(--border2); background: var(--surface3); }
   .sleep-field input[type="date"]::-webkit-calendar-picker-indicator,
   .sleep-field input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
+  .sleep-field-hint { font-size: 11px; color: var(--text-dim); font-family: 'DM Mono', monospace; }
 
-  .sleep-field-hint {
-    font-size: 11px;
-    color: var(--text-dim);
-    font-family: 'DM Mono', monospace;
-  }
-
-  /* ─── Duration bar ─── */
-  .sleep-bar-wrap {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 1rem 1.25rem;
-    margin-bottom: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .sleep-bar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .sleep-bar-label {
-    font-size: 11px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    font-family: 'DM Mono', monospace;
-  }
-
-  .sleep-bar-value {
-    font-size: 22px;
-    font-weight: 600;
-    color: #a78bfa;
-    font-family: 'DM Mono', monospace;
-  }
-
-  .sleep-bar-track {
-    height: 8px;
-    background: var(--surface3);
-    border-radius: 99px;
-    overflow: hidden;
-  }
-
-  .sleep-bar-fill {
-    height: 100%;
-    border-radius: 99px;
-    background: linear-gradient(90deg, #7c3aed, #a78bfa);
-    transition: width 0.4s ease;
-    min-width: 0;
-  }
-
-  .sleep-bar-zones {
-    display: flex;
-    justify-content: space-between;
-    font-size: 10px;
-    color: var(--text-dim);
-    font-family: 'DM Mono', monospace;
-  }
-
-  /* ─── Scrollable charts — ascunde scrollbar ─── */
-  #sleepChartScroll,
-  #scheduleChartScroll {
-    scrollbar-width: none;        /* Firefox */
-    -ms-overflow-style: none;     /* IE / Edge vechi */
+  /* ─── Scrollable charts ─── */
+  #sleepChartScroll, #scheduleChartScroll {
+    overflow-x: auto; overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; -ms-overflow-style: none;
   }
   #sleepChartScroll::-webkit-scrollbar,
-  #scheduleChartScroll::-webkit-scrollbar {
-    display: none;                /* Chrome / Safari / mobile */
-  }
+  #scheduleChartScroll::-webkit-scrollbar { display: none; }
+  #scheduleChartScroll { overflow-y: auto; max-height: 320px; }
 
   /* ─── Stat card purple ─── */
   .stat-value.purple { color: #a78bfa; }
@@ -131,23 +122,19 @@
     font-size: 11px; padding: 2px 8px; border-radius: 20px;
     font-family: 'DM Mono', monospace;
   }
-  .sleep-badge.long   { background: rgba(52,211,153,0.12); color: #34d399; }
-  .sleep-badge.ok     { background: rgba(78,158,255,0.12); color: #4e9eff; }
-  .sleep-badge.short  { background: rgba(251,191,36,0.12); color: #fbbf24; }
+  .sleep-badge.long   { background: rgba(52,211,153,0.12);  color: #34d399; }
+  .sleep-badge.ok     { background: rgba(78,158,255,0.12);  color: #4e9eff; }
+  .sleep-badge.short  { background: rgba(251,191,36,0.12);  color: #fbbf24; }
   .sleep-badge.vshort { background: rgba(248,113,113,0.12); color: #f87171; }
 
   @media (max-width: 768px) {
     .sleep-form-grid { grid-template-columns: 1fr; gap: 10px; }
-    .sleep-bar-value { font-size: 18px; }
+    .sleep-active-timer { font-size: 22px; }
   }
 </style>
 
 <link rel="manifest" href="manifest.json" />
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./service-worker.js');
-  }
-</script>
+<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('./service-worker.js');</script>
 </head>
 <body>
 <div class="app">
@@ -176,9 +163,28 @@
       </div>
     </div>
 
-    <!-- Form -->
+    <!-- Sesiune somn activa -->
+    <div class="sleep-active-bar" id="sleep-active-section">
+      <div class="sleep-active-header">
+        <div class="sleep-active-label">
+          <span class="sleep-active-dot"></span>
+          Somn în desfășurare
+        </div>
+        <button class="btn-wake-now" id="btn-wake-now">
+          <i class="ti ti-sun"></i> M-am trezit
+        </button>
+      </div>
+      <div class="sleep-active-timer" id="sleep-active-timer">00:00:00</div>
+    </div>
+
+    <!-- Buton Mă culc acum -->
+    <button class="btn-sleep-now" id="btn-sleep-now">
+      <i class="ti ti-moon"></i> Mă culc acum
+    </button>
+
+    <!-- Form manual -->
     <div class="form-section">
-      <div class="section-title" style="margin-bottom:14px;">Adaugă somn</div>
+      <div class="section-title" style="margin-bottom:14px;">Adaugă manual</div>
       <div class="sleep-form-grid">
         <div class="sleep-field">
           <label>Data culcat</label>
@@ -214,8 +220,7 @@
           <span><span class="leg-dot" style="background:#4e9eff; border-radius:0; height:2px; width:16px; display:inline-block;"></span>Recomandare 8h</span>
         </div>
       </div>
-      <!-- scroll stanga/dreapta -->
-      <div id="sleepChartScroll" style="overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch;">
+      <div id="sleepChartScroll">
         <div id="sleepChartWrap" style="height:200px; position:relative;">
           <canvas id="sleepChart"></canvas>
         </div>
@@ -227,8 +232,7 @@
       <div class="chart-header">
         <div class="section-title">Oră culcat vs Oră trezit</div>
       </div>
-      <!-- scroll stanga/dreapta SI sus/jos -->
-      <div id="scheduleChartScroll" style="overflow:auto; -webkit-overflow-scrolling:touch; max-height:320px;">
+      <div id="scheduleChartScroll">
         <div id="scheduleChartWrap" style="height:300px; position:relative;">
           <canvas id="scheduleChart"></canvas>
         </div>
@@ -259,11 +263,5 @@
 <script src="db.js"></script>
 <script src="nav.js"></script>
 <script src="sleep.js"></script>
-<script>
-  history.pushState({ page: 'sleep.html' }, '', location.href);
-  window.addEventListener('popstate', function() {
-    location.replace('home.html');
-  });
-</script>
 </body>
 </html>

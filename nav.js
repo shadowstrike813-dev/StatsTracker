@@ -90,6 +90,10 @@ function initNav(activePage) {
       <i class="ti ti-heart-rate-monitor"></i>
       Health Tracker
     </div>
+    <a href="sleep.html" class="nav-active-session" id="nav-active-sleep" style="display:none" title="Somn activ">
+      <span class="nav-active-dot" style="background:var(--amber)"></span>
+      <span style="color:var(--amber)">Somn activ</span>
+    </a>
     <a href="session-active.html" class="nav-active-session" id="nav-active-session" style="display:none" title="Sesiune activă">
       <span class="nav-active-dot"></span>
       Sesiune activă
@@ -182,23 +186,20 @@ function initNav(activePage) {
   });
 
   // ─── Active session indicator ──────────────────────────────────────────────
-  // Verifica daca exista o sesiune activa si afiseaza indicatorul
-  if (typeof DB !== 'undefined') {
-    DB.getActiveSession().then(session => {
-      if (session) {
-        document.getElementById('nav-active-session').style.display = 'flex';
-      }
+  function checkIndicators() {
+    DB.getActiveSession().then(s => {
+      if (s) document.getElementById('nav-active-session').style.display = 'flex';
     }).catch(() => {});
+    DB.getActiveSleepSession().then(s => {
+      if (s) document.getElementById('nav-active-sleep').style.display = 'flex';
+    }).catch(() => {});
+  }
+
+  if (typeof DB !== 'undefined') {
+    checkIndicators();
   } else {
-    // DB nu e inca incarcat, asteaptam
     window.addEventListener('load', () => {
-      if (typeof DB !== 'undefined') {
-        DB.getActiveSession().then(session => {
-          if (session) {
-            document.getElementById('nav-active-session').style.display = 'flex';
-          }
-        }).catch(() => {});
-      }
+      if (typeof DB !== 'undefined') checkIndicators();
     });
   }
 }
