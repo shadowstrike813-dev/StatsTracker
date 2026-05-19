@@ -133,12 +133,19 @@ document.getElementById('btn-wake-now').addEventListener('click', async () => {
 
 const BAR_W = 48;
 
-function setChartWidth(wrapperId, dataLen) {
+function setChartWidth(wrapperId, canvasId, dataLen, height) {
   const wrapper = document.getElementById(wrapperId);
-  if (!wrapper) return;
-  const minW = wrapper.parentElement.offsetWidth || 300;
-  wrapper.style.width  = Math.max(minW, dataLen * BAR_W) + 'px';
-  wrapper.style.height = '100%';
+  const canvas  = document.getElementById(canvasId);
+  if (!wrapper || !canvas) return;
+  const scroll = wrapper.parentElement;
+  const minW   = (scroll ? scroll.offsetWidth : 0) || 300;
+  const w      = Math.max(minW, dataLen * BAR_W);
+  wrapper.style.width  = w + 'px';
+  wrapper.style.height = height + 'px';
+  canvas.width         = w;
+  canvas.height        = height;
+  canvas.style.width   = w + 'px';
+  canvas.style.height  = height + 'px';
 }
 
 // ─── Render ───────────────────────────────────────────────────────────────────
@@ -193,7 +200,7 @@ function render(entries) {
   )));
 
   // ── Chart 1: durată ──────────────────────────────────────────────────────────
-  setChartWidth('sleepChartWrap', sorted.length);
+  setChartWidth('sleepChartWrap', 'sleepChart', sorted.length, 200);
 
   chart = new Chart(document.getElementById('sleepChart'), {
     type: 'bar',
@@ -284,7 +291,7 @@ function render(entries) {
   const yMin = Math.floor(avgCenter - halfRange);
   const yMax = Math.ceil(avgCenter + halfRange);
 
-  setChartWidth('scheduleChartWrap', sorted.length);
+  setChartWidth('scheduleChartWrap', 'scheduleChart', sorted.length, 300);
 
   scheduleChart = new Chart(document.getElementById('scheduleChart'), {
     type: 'bar',
