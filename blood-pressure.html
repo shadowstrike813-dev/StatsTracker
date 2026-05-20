@@ -103,9 +103,17 @@
           <span><span class="leg-dot" style="background:#fbbf24"></span>Puls</span>
         </div>
       </div>
-      <div id="bpChartScroll" style="overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; scrollbar-width:none; -ms-overflow-style:none;">
-        <div id="bpChartWrap" style="height:200px; position:relative;">
-          <canvas id="bpChart" aria-label="Grafic evoluție tensiune arterială"></canvas>
+      <!-- Wrapper cu axa Y fixa si zona de date scrollabila -->
+      <div style="display:flex; align-items:stretch;">
+        <!-- Axa Y fixa -->
+        <div style="flex-shrink:0; position:relative; width:44px; height:200px;">
+          <canvas id="bpChartY" style="position:absolute;top:0;left:0;width:44px;height:200px;"></canvas>
+        </div>
+        <!-- Zona de date scrollabila -->
+        <div id="bpChartScroll" style="flex:1; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; scrollbar-width:none; -ms-overflow-style:none; position:relative; height:200px;">
+          <div id="bpChartWrap" style="position:relative; height:200px;">
+            <canvas id="bpChart" aria-label="Grafic evoluție tensiune arterială" style="position:absolute;top:0;left:0;"></canvas>
+          </div>
         </div>
       </div>
     </div>

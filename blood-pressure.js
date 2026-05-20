@@ -76,47 +76,115 @@ function render(entries) {
     }).join('');
   }
 
-  if (chart) chart.destroy();
+  if (chart) { chart.destroy(); chart = null; }
+  if (window.bpChartY) { window.bpChartY.destroy(); window.bpChartY = null; }
+
   if (sorted.length) {
     const BAR_W  = 52;
+    const H      = 200;
     const scroll = document.getElementById('bpChartScroll');
     const wrap   = document.getElementById('bpChartWrap');
     const canvas = document.getElementById('bpChart');
-    if (scroll && wrap && canvas) {
-      const minW = scroll.offsetWidth || 300;
-      const w    = Math.max(minW, sorted.length * BAR_W);
-      wrap.style.width   = w + 'px';
-      wrap.style.height  = '200px';
-      canvas.width       = w;
-      canvas.height      = 200;
+
+    const dataW = sorted.length * BAR_W;
+    const scrollW = scroll ? scroll.offsetWidth : 300;
+
+    if (wrap && canvas) {
+      const w = Math.max(scrollW, dataW);
+      wrap.style.width    = w + 'px';
+      wrap.style.height   = H + 'px';
+      canvas.width        = w;
+      canvas.height       = H;
       canvas.style.width  = w + 'px';
-      canvas.style.height = '200px';
+      canvas.style.height = H + 'px';
     }
 
-    chart = new Chart(document.getElementById('bpChart'), {
+    const commonDatasets = [
+      { label: 'Sistolică',  data: sorted.map(e => e.sys),  borderColor: '#4e9eff', backgroundColor: 'rgba(78,158,255,0.08)',  tension: 0.35, pointRadius: 5, pointBackgroundColor: '#4e9eff', pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false },
+      { label: 'Diastolică', data: sorted.map(e => e.dia),  borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.06)',  tension: 0.35, pointRadius: 5, pointBackgroundColor: '#34d399', pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false, borderDash: [6,3] },
+      { label: 'Puls',       data: sorted.map(e => e.puls), borderColor: '#fbbf24', backgroundColor: 'rgba(251,191,36,0.06)',  tension: 0.35, pointRadius: 5, pointBackgroundColor: '#fbbf24', pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false, borderDash: [2,4] },
+    ];
+
+    const commonYScale = {
+      min: 50, max: 170,
+      grid: { color: 'rgba(255,255,255,0.05)' },
+      ticks: { color: '#4a4d57', font: { family: 'DM Mono', size: 11 } },
+      border: { color: 'transparent' },
+    };
+
+    const tooltipOpts = {
+      backgroundColor: '#1e2026', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1,
+      titleColor: '#7a7d87', bodyColor: '#e8e9ec', padding: 10, cornerRadius: 8,
+    };
+
+    // ── Chart 1: axa Y fixa (fara date vizibile, fara axa X) ─────────────────
+    const canvasY = document.getElementById('bpChartY');
+    if (canvasY) {
+      canvasY.width        = 44;
+      canvasY.height       = H;
+      canvasY.style.width  = '44px';
+      canvasY.style.height = H + 'px';
+
+      window.bpChartY = new Chart(canvasY, {
+        type: 'line',
+        data: {
+          labels: sorted.map(e => fmtDate(e.date)),
+          datasets: commonDatasets.map(d => ({
+            ...d,
+            pointRadius: 0,    // ascundem punctele
+            borderWidth: 0,    // ascundem liniile
+            borderColor: 'transparent',
+            backgroundColor: 'transparent',
+          })),
+        },
+        options: {
+          responsive: false,
+          maintainAspectRatio: false,
+          animation: false,
+          plugins: { legend: { display: false }, tooltip: { enabled: false } },
+          scales: {
+            y: {
+              ...commonYScale,
+              position: 'left',
+            },
+            x: {
+              display: false, // ascundem axa X
+              grid: { display: false },
+            },
+          },
+          layout: { padding: { top: 6, bottom: 6 } },
+        },
+      });
+    }
+
+    // ── Chart 2: datele (fara axa Y) ─────────────────────────────────────────
+    chart = new Chart(canvas, {
       type: 'line',
       data: {
         labels: sorted.map(e => fmtDate(e.date)),
-        datasets: [
-          { label: 'Sistolică', data: sorted.map(e => e.sys), borderColor: '#4e9eff', backgroundColor: 'rgba(78,158,255,0.08)', tension: 0.35, pointRadius: 5, pointBackgroundColor: '#4e9eff', pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false },
-          { label: 'Diastolică', data: sorted.map(e => e.dia), borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.06)', tension: 0.35, pointRadius: 5, pointBackgroundColor: '#34d399', pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false, borderDash: [6,3] },
-          { label: 'Puls', data: sorted.map(e => e.puls), borderColor: '#fbbf24', backgroundColor: 'rgba(251,191,36,0.06)', tension: 0.35, pointRadius: 5, pointBackgroundColor: '#fbbf24', pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false, borderDash: [2,4] },
-        ],
+        datasets: commonDatasets,
       },
       options: {
         responsive: false,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1e2026', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#7a7d87', bodyColor: '#e8e9ec', padding: 10, cornerRadius: 8 } },
+        plugins: { legend: { display: false }, tooltip: tooltipOpts },
         scales: {
-          y: { min: 50, max: 170, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#4a4d57', font: { family: 'DM Mono', size: 11 } }, border: { color: 'transparent' } },
-          x: { grid: { display: false }, ticks: { color: '#4a4d57', font: { family: 'DM Mono', size: 11 }, maxRotation: 30, autoSkip: false }, border: { color: 'rgba(255,255,255,0.07)' } },
+          y: {
+            ...commonYScale,
+            display: false, // ascundem axa Y — e pe canvas-ul fix
+          },
+          x: {
+            grid: { display: false },
+            ticks: { color: '#4a4d57', font: { family: 'DM Mono', size: 11 }, maxRotation: 30, autoSkip: false },
+            border: { color: 'rgba(255,255,255,0.07)' },
+          },
         },
+        layout: { padding: { top: 6, bottom: 6 } },
       },
     });
 
-    // Scroll la cel mai recent punct
-    const scrollEl = document.getElementById('bpChartScroll');
-    if (scrollEl) setTimeout(() => { scrollEl.scrollLeft = scrollEl.scrollWidth; }, 50);
+    // Scroll la cel mai recent
+    if (scroll) setTimeout(() => { scroll.scrollLeft = scroll.scrollWidth; }, 50);
   }
 }
 
