@@ -181,8 +181,8 @@ function render(entries) {
       const badge = getSleepBadge(mins);
       return `<tr>
         <td>${fmtDate(e.wake_date)}</td>
-        <td style="font-family:'DM Mono',monospace">${fmtDate(e.sleep_date)} ${fmtTime(e.sleep_time)}</td>
-        <td style="font-family:'DM Mono',monospace">${fmtDate(e.wake_date)} ${fmtTime(e.wake_time)}</td>
+        <td class="sleep-col-hide" style="font-family:'DM Mono',monospace">${fmtDate(e.sleep_date)} ${fmtTime(e.sleep_time)}</td>
+        <td class="sleep-col-hide" style="font-family:'DM Mono',monospace">${fmtDate(e.wake_date)} ${fmtTime(e.wake_time)}</td>
         <td class="sleep-duration-cell">${fmtDuration(mins)}</td>
         <td><span class="sleep-badge ${badge.cls}">${badge.label}</span></td>
         <td><button class="btn-del" onclick="handleDelete('${e.id}')" title="Șterge">✕</button></td>

@@ -112,6 +112,20 @@
   #scheduleChartScroll::-webkit-scrollbar { display: none; }
   #scheduleChartScroll { overflow-y: auto; max-height: 320px; }
 
+  /* ─── Mobile ─── */
+  @media (max-width: 768px) {
+    .sleep-form-grid { grid-template-columns: 1fr; gap: 10px; }
+    .sleep-active-timer { font-size: 22px; }
+
+    /* Pe mobil ascundem coloanele "Culcat" si "Trezit" (date+ora) din tabel
+       si le afisam expandat intr-un al doilea rand */
+    .sleep-col-hide { display: none; }
+
+    /* Butonul M-am trezit sa fie mai mic pe mobil */
+    .btn-wake-now { padding: 8px 14px; font-size: 12px; }
+    .btn-sleep-now { padding: 8px 16px; font-size: 12px; }
+  }
+
   /* ─── Stat card purple ─── */
   .stat-value.purple { color: #a78bfa; }
 
@@ -246,8 +260,8 @@
         <thead>
           <tr>
             <th>Data trezit</th>
-            <th>Culcat</th>
-            <th>Trezit</th>
+            <th class="sleep-col-hide">Culcat</th>
+            <th class="sleep-col-hide">Trezit</th>
             <th>Durată</th>
             <th>Status</th>
             <th></th>
