@@ -53,7 +53,6 @@ function render(entries) {
         <td style="color:#4e9eff">${e.sys} mmHg</td>
         <td><span class="badge ${st.cls}">${st.label}</span></td>
         <td><button class="btn-del" onclick="event.stopPropagation(); handleDelete('${e.id}')" title="Șterge">✕</button></td>
-        <td><span class="expand-icon"><i class="ti ti-chevron-right"></i></span></td>
       </tr>
       <tr class="bp-row-body">
         <td colspan="5">
