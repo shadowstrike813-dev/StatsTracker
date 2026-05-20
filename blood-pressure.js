@@ -98,7 +98,7 @@ function render(entries) {
 
     // ── Axa Y fixa ────────────────────────────────────────────────────────────
     const canvasY = document.getElementById('bpChartY');
-    canvasY.width  = 44; canvasY.height = H;
+    canvasY.width  = 36; canvasY.height = H;
     window._bpYChart = new Chart(canvasY, {
       type: 'line',
       data: { labels: sorted.map(e => fmtDate(e.date)), datasets: datasets.map(d => ({ ...d, pointRadius: 0, borderWidth: 0, borderColor: 'transparent', backgroundColor: 'transparent', fill: false })) },
@@ -109,7 +109,7 @@ function render(entries) {
           y: { ...yScaleOpts, position: 'left' },
           x: { display: false },
         },
-        layout: { padding: { top: 8, bottom: 8, right: 0, left: 0 } },
+        layout: { padding: { top: 8, bottom: 24, right: 0, left: 0 } },
       },
     });
 
@@ -136,7 +136,7 @@ function render(entries) {
           plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1e2026', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#7a7d87', bodyColor: '#e8e9ec', padding: 10, cornerRadius: 8 } },
           scales: {
             y: { ...yScaleOpts, display: false },
-            x: { grid: { display: false }, ticks: { color: '#4a4d57', font: { family: 'DM Mono', size: 11 }, maxRotation: 30, autoSkip: false }, border: { color: 'rgba(255,255,255,0.07)' } },
+            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#4a4d57', font: { family: 'DM Mono', size: 11 }, maxRotation: 30, autoSkip: false }, border: { color: 'rgba(255,255,255,0.07)' } },
           },
           layout: { padding: { top: 8, bottom: 8, left: 4, right: 8 } },
         },
