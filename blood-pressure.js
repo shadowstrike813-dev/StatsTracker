@@ -77,51 +77,17 @@ function render(entries) {
   }
 
   if (chart) chart.destroy();
-  if (window._bpYChart) { window._bpYChart.destroy(); window._bpYChart = null; }
-
   if (sorted.length) {
-    const PX_PER_POINT = 52;
-    const H = 200;
+    const PX = 52;
+    const H  = 200;
 
-    const yScaleOpts = {
-      min: 50, max: 170,
-      grid: { color: 'rgba(255,255,255,0.05)' },
-      ticks: { color: '#4a4d57', font: { family: 'DM Mono', size: 11 } },
-      border: { color: 'transparent' },
-    };
-
-    const datasets = [
-      { label: 'Sistolică',  data: sorted.map(e => e.sys),  borderColor: '#4e9eff', backgroundColor: 'rgba(78,158,255,0.08)', tension: 0.35, pointRadius: 5, pointBackgroundColor: '#4e9eff', pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false },
-      { label: 'Diastolică', data: sorted.map(e => e.dia),  borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.06)', tension: 0.35, pointRadius: 5, pointBackgroundColor: '#34d399', pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false, borderDash: [6,3] },
-      { label: 'Puls',       data: sorted.map(e => e.puls), borderColor: '#fbbf24', backgroundColor: 'rgba(251,191,36,0.06)', tension: 0.35, pointRadius: 5, pointBackgroundColor: '#fbbf24', pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false, borderDash: [2,4] },
-    ];
-
-    // ── Axa Y fixa ────────────────────────────────────────────────────────────
-    const canvasY = document.getElementById('bpChartY');
-    canvasY.width  = 36; canvasY.height = H;
-    window._bpYChart = new Chart(canvasY, {
-      type: 'line',
-      data: { labels: sorted.map(e => fmtDate(e.date)), datasets: datasets.map(d => ({ ...d, pointRadius: 0, borderWidth: 0, borderColor: 'transparent', backgroundColor: 'transparent', fill: false })) },
-      options: {
-        responsive: false, maintainAspectRatio: false, animation: false,
-        plugins: { legend: { display: false }, tooltip: { enabled: false } },
-        scales: {
-          y: { ...yScaleOpts, position: 'left' },
-          x: { display: false },
-        },
-        layout: { padding: { top: 8, bottom: 24, right: 0, left: 0 } },
-      },
-    });
-
-    // ── Date scrollabile ──────────────────────────────────────────────────────
-    const scroll = document.getElementById('bpChartScroll');
-    const wrap   = document.getElementById('bpChartWrap');
-    const canvas = document.getElementById('bpChart');
-
-    // Setam latimea dupa ce DOM e randat
     requestAnimationFrame(() => {
-      const scrollW = scroll.offsetWidth || 300;
-      const w = Math.max(scrollW, sorted.length * PX_PER_POINT);
+      const scroll = document.getElementById('bpChartScroll');
+      const wrap   = document.getElementById('bpChartWrap');
+      const canvas = document.getElementById('bpChart');
+      const scrollW = scroll ? scroll.offsetWidth : 300;
+      const w = Math.max(scrollW, sorted.length * PX);
+
       wrap.style.width    = w + 'px';
       canvas.width        = w;
       canvas.height       = H;
@@ -130,15 +96,32 @@ function render(entries) {
 
       chart = new Chart(canvas, {
         type: 'line',
-        data: { labels: sorted.map(e => fmtDate(e.date)), datasets },
+        data: {
+          labels: sorted.map(e => fmtDate(e.date)),
+          datasets: [
+            { label: 'Sistolică',  data: sorted.map(e => e.sys),  borderColor: '#4e9eff', backgroundColor: 'rgba(78,158,255,0.08)', tension: 0.35, pointRadius: 5, pointBackgroundColor: '#4e9eff',  pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false },
+            { label: 'Diastolică', data: sorted.map(e => e.dia),  borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.06)', tension: 0.35, pointRadius: 5, pointBackgroundColor: '#34d399',  pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false, borderDash: [6,3] },
+            { label: 'Puls',       data: sorted.map(e => e.puls), borderColor: '#fbbf24', backgroundColor: 'rgba(251,191,36,0.06)', tension: 0.35, pointRadius: 5, pointBackgroundColor: '#fbbf24',  pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false, borderDash: [2,4] },
+          ],
+        },
         options: {
-          responsive: false, maintainAspectRatio: false,
+          responsive: false,
+          maintainAspectRatio: false,
           plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1e2026', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#7a7d87', bodyColor: '#e8e9ec', padding: 10, cornerRadius: 8 } },
           scales: {
-            y: { ...yScaleOpts, display: false },
-            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#4a4d57', font: { family: 'DM Mono', size: 11 }, maxRotation: 30, autoSkip: false }, border: { color: 'rgba(255,255,255,0.07)' } },
+            y: {
+              min: 50, max: 170,
+              grid: { color: 'rgba(255,255,255,0.05)' },
+              ticks: { color: '#4a4d57', font: { family: 'DM Mono', size: 11 } },
+              border: { color: 'transparent' },
+              afterFit(scale) { scale.width = 40; }, // latime fixa axa Y
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#4a4d57', font: { family: 'DM Mono', size: 11 }, maxRotation: 30, autoSkip: false },
+              border: { color: 'rgba(255,255,255,0.07)' },
+            },
           },
-          layout: { padding: { top: 8, bottom: 8, left: 4, right: 8 } },
         },
       });
 
