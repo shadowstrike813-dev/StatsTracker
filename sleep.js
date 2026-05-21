@@ -102,17 +102,26 @@ document.getElementById('btn-sleep-now').addEventListener('click', async () => {
 // ─── Buton M-am trezit ────────────────────────────────────────────────────────
 
 document.getElementById('btn-wake-now').addEventListener('click', async () => {
-  if (!activeSleepSession) return;
+  // Re-fetch sesiunea daca nu e in memorie (ex: pagina reincarcata)
+  if (!activeSleepSession) {
+    activeSleepSession = await DB.getActiveSleepSession();
+  }
+  if (!activeSleepSession) { setError('! Nicio sesiune activă găsită.'); return; }
 
   const wakeNow  = new Date();
   const sleepDt  = new Date(activeSleepSession.sleep_start);
 
-  const sleepDate = sleepDt.toISOString().split('T')[0];
-  const sleepTime = `${String(sleepDt.getHours()).padStart(2,'0')}:${String(sleepDt.getMinutes()).padStart(2,'0')}`;
-  const wakeDate  = wakeNow.toISOString().split('T')[0];
-  const wakeTime  = `${String(wakeNow.getHours()).padStart(2,'0')}:${String(wakeNow.getMinutes()).padStart(2,'0')}`;
+  const pad = n => String(n).padStart(2, '0');
 
-  const mins = calcDurationMinutes(sleepDate, sleepTime, wakeDate, wakeTime);
+  const sleepDate = `${sleepDt.getFullYear()}-${pad(sleepDt.getMonth()+1)}-${pad(sleepDt.getDate())}`;
+  const sleepTime = `${pad(sleepDt.getHours())}:${pad(sleepDt.getMinutes())}`;
+  const wakeDate  = `${wakeNow.getFullYear()}-${pad(wakeNow.getMonth()+1)}-${pad(wakeNow.getDate())}`;
+  const wakeTime  = `${pad(wakeNow.getHours())}:${pad(wakeNow.getMinutes())}`;
+
+  // Calculeaza durata direct din timestamp-uri, nu din strings
+  const diffMs = wakeNow - sleepDt;
+  const mins   = diffMs / 60000;
+
   if (mins <= 0 || mins > 24 * 60) {
     setError('! Durată invalidă.'); return;
   }
@@ -121,9 +130,20 @@ document.getElementById('btn-wake-now').addEventListener('click', async () => {
     await DB.addSleep({ sleep_date: sleepDate, sleep_time: sleepTime, wake_date: wakeDate, wake_time: wakeTime });
     await DB.endSleepSession(activeSleepSession.id);
     activeSleepSession = null;
+
     // Ascundem indicatorul din nav
     const navEl = document.getElementById('nav-active-sleep');
     if (navEl) navEl.style.display = 'none';
+
+    // Oprim timerul
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+
+    // Completam formularul manual cu valorile reale
+    document.getElementById('inp-sleep-date').value = sleepDate;
+    document.getElementById('inp-sleep-time').value = sleepTime;
+    document.getElementById('inp-wake-date').value  = wakeDate;
+    document.getElementById('inp-wake-time').value  = wakeTime;
+
     updateActiveUI();
     await loadAndRender();
   } catch(err) { setError('! Eroare la salvare.'); }
@@ -404,10 +424,13 @@ async function init() {
   activeSleepSession = await DB.getActiveSleepSession();
   updateActiveUI();
 
-  const today     = new Date().toISOString().split('T')[0];
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-  document.getElementById('inp-sleep-date').value = yesterday;
-  document.getElementById('inp-wake-date').value  = today;
+  const now       = new Date();
+  const yesterday = new Date(now - 86400000);
+  const pad = n => String(n).padStart(2,'0');
+  const localDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+
+  document.getElementById('inp-sleep-date').value = localDate(yesterday);
+  document.getElementById('inp-wake-date').value  = localDate(now);
   document.getElementById('btn-add').addEventListener('click', handleAdd);
 
   await loadAndRender();
