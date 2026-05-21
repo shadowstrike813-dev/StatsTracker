@@ -6,7 +6,9 @@ if (!EXERCISE_ID) location.href = 'workout.html';
 
 let sets = [{ kg: '', reps: '', warmup: false }];
 let chart = null;
-let globalPR = 0; // PR-ul anterior salvărilor curente
+let globalPR = 0;
+let bodyWeight = null;     // greutatea din profil
+let isBodyweightEx = false; // daca exercitiul e greutate corporala
 
 function fmtDate(d) { const [y,m,day] = d.split('-'); return `${day}.${m}.${y}`; }
 function setError(msg) { document.getElementById('err-msg').textContent = msg; }
@@ -15,12 +17,28 @@ function setError(msg) { document.getElementById('err-msg').textContent = msg; }
 
 function renderSets() {
   const builder = document.getElementById('sets-builder');
+  const bwBtn = isBodyweightEx && bodyWeight
+    ? `<button class="btn-bw" onclick="applyBodyWeight(${sets.indexOf ? '' : ''}this, event)" title="Folosește greutatea corporală" style="
+        background:var(--amber-dim); border:1px solid rgba(251,191,36,0.3);
+        border-radius:var(--radius); padding:4px 8px; font-family:'DM Mono',monospace;
+        font-size:10px; color:var(--amber); cursor:pointer; white-space:nowrap;
+        grid-column: span 2; margin-top:2px;
+      ">${bodyWeight} kg (corp)</button>`
+    : '';
+
   builder.innerHTML = sets.map((s, i) => `
     <div class="set-row ${s.warmup ? 'set-warmup' : ''}">
       <div class="set-num">${s.warmup ? '<i class="ti ti-flame" style="color:var(--amber);font-size:13px;" title="Warmup"></i>' : i + 1}</div>
-      <input type="number" placeholder="kg" value="${s.kg}" min="0" step="0.5"
-        oninput="sets[${i}].kg = this.value"
-        onkeydown="setKeyNav(event, ${i}, 'kg')" />
+      <div style="display:flex; flex-direction:column; gap:3px;">
+        <input type="number" placeholder="kg" value="${s.kg}" min="0" step="0.5"
+          oninput="sets[${i}].kg = this.value"
+          onkeydown="setKeyNav(event, ${i}, 'kg')" />
+        ${isBodyweightEx && bodyWeight ? `<button onclick="sets[${i}].kg='${bodyWeight}'; renderSets()" style="
+          background:var(--amber-dim); border:1px solid rgba(251,191,36,0.3);
+          border-radius:6px; padding:3px 6px; font-family:'DM Mono',monospace;
+          font-size:10px; color:var(--amber); cursor:pointer; text-align:left;
+        ">${bodyWeight} kg ↑</button>` : ''}
+      </div>
       <input type="number" placeholder="rep" value="${s.reps}" min="1"
         oninput="sets[${i}].reps = this.value"
         onkeydown="setKeyNav(event, ${i}, 'reps')" />
@@ -305,13 +323,28 @@ async function deleteSession(id) {
 
 async function init() {
   try {
-    const exercises = await DB.getExercises();
+    const [exercises, profile] = await Promise.all([DB.getExercises(), DB.getProfile()]);
     const found = exercises.find(e => e.id === EXERCISE_ID);
     if (!found) { location.href = 'workout.html'; return; }
     document.title = `${found.name} — Health Tracker`;
     document.getElementById('ex-title').textContent = found.name;
     const meta = [found.muscle_group, found.type === 'compound' ? 'Compus' : 'Izolat', found.equipment].filter(Boolean).join(' · ');
     document.getElementById('ex-meta').textContent = meta || 'Exercitiu';
+
+    // Seteaza greutatea corporala daca e exercitiu cu greutate corporala
+    isBodyweightEx = (found.equipment || '').toLowerCase().includes('corporală') ||
+                     (found.equipment || '').toLowerCase().includes('corporala');
+    bodyWeight = profile.target_weight || null;
+
+    // Incearca sa ia ultima greutate inregistrata
+    try {
+      const weights = await DB.getWeight();
+      if (weights.length) {
+        const last = weights.sort((a,b) => b.date.localeCompare(a.date))[0];
+        bodyWeight = last.kg;
+      }
+    } catch(e) {}
+
   } catch(e) {}
 
   document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];

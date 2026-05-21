@@ -8,6 +8,8 @@ let notifTimeout = null;
 let notifTimerInterval = null;
 let modalSets = [];
 let modalExId = null;
+let modalIsBodyweight = false;
+let modalBodyWeight = null;
 let sessionCharts = [];
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
@@ -172,6 +174,16 @@ function openSetsModal(exId) {
   const ex = allExercises.find(e => e.id === exId);
   if (!ex) return;
   modalExId = exId;
+  modalIsBodyweight = (ex.equipment || '').toLowerCase().includes('corporală') ||
+                      (ex.equipment || '').toLowerCase().includes('corporala');
+  // Ia ultima greutate inregistrata
+  DB.getWeight().then(weights => {
+    if (weights.length) {
+      const last = weights.sort((a,b) => b.date.localeCompare(a.date))[0];
+      modalBodyWeight = last.kg;
+      if (modalIsBodyweight) renderModalSets();
+    }
+  }).catch(() => {});
 
   document.getElementById('sets-modal-title').textContent = ex.name;
   document.getElementById('sets-modal-meta').textContent  = [ex.muscle_group, ex.type === 'compound' ? 'Compus' : 'Izolat', ex.equipment].filter(Boolean).join(' · ') || 'Exercițiu';
@@ -195,9 +207,16 @@ function renderModalSets() {
   builder.innerHTML = modalSets.map((s, i) => `
     <div class="set-row ${s.warmup ? 'set-warmup' : ''}">
       <div class="set-num">${s.warmup ? '<i class="ti ti-flame" style="color:var(--amber);font-size:12px;"></i>' : i + 1}</div>
-      <input type="number" placeholder="kg" value="${s.kg}" min="0" step="0.5"
-        oninput="modalSets[${i}].kg = this.value"
-        onkeydown="modalSetKeyNav(event,${i},'kg')" />
+      <div style="display:flex; flex-direction:column; gap:3px;">
+        <input type="number" placeholder="kg" value="${s.kg}" min="0" step="0.5"
+          oninput="modalSets[${i}].kg = this.value"
+          onkeydown="modalSetKeyNav(event,${i},'kg')" />
+        ${modalIsBodyweight && modalBodyWeight ? `<button onclick="modalSets[${i}].kg='${modalBodyWeight}'; renderModalSets()" style="
+          background:var(--amber-dim); border:1px solid rgba(251,191,36,0.3);
+          border-radius:6px; padding:3px 6px; font-family:'DM Mono',monospace;
+          font-size:10px; color:var(--amber); cursor:pointer; text-align:left;
+        ">${modalBodyWeight} kg ↑</button>` : ''}
+      </div>
       <input type="number" placeholder="rep" value="${s.reps}" min="1"
         oninput="modalSets[${i}].reps = this.value"
         onkeydown="modalSetKeyNav(event,${i},'reps')" />
