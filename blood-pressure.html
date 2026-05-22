@@ -45,35 +45,6 @@
     display: inline-block;
   }
   .bp-row-head.expanded .expand-icon { transform: rotate(90deg); }
-
-  /* ─── Scrollable chart ─── */
-  .chartWrapper {
-    position: relative;
-    height: 200px;
-  }
-
-  .chartWrapper > canvas#bpChartAxis {
-    position: absolute;
-    left: 0;
-    top: 0;
-    pointer-events: none;
-    z-index: 2;
-  }
-
-  .chartAreaWrapper {
-    height: 200px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-  .chartAreaWrapper::-webkit-scrollbar { display: none; }
-
-  .chartAreaWrapper2 {
-    height: 200px;
-    position: relative;
-  }
 </style>
 
 <link rel="manifest" href="manifest.json" />
@@ -130,13 +101,8 @@
           <span><span class="leg-dot" style="background:#fbbf24"></span>Puls</span>
         </div>
       </div>
-      <div class="chartWrapper">
-        <div class="chartAreaWrapper" id="bpChartScroll">
-          <div class="chartAreaWrapper2" id="bpChartInner">
-            <canvas id="bpChart" height="200"></canvas>
-          </div>
-        </div>
-        <canvas id="bpChartAxis" height="200"></canvas>
+      <div class="chart-wrap">
+        <canvas id="bpChart" aria-label="Grafic evoluție tensiune arterială"></canvas>
       </div>
     </div>
 
@@ -145,7 +111,7 @@
       <table>
         <thead>
           <tr>
-            <th>Data</th><th>Sistolică</th><th>Status</th><th></th>
+            <th>Data</th><th>Sistolică</th><th>Status</th><th></th><th></th>
           </tr>
         </thead>
         <tbody id="tbl-body"></tbody>
@@ -158,5 +124,12 @@
 <script src="db.js"></script>
 <script src="nav.js"></script>
 <script src="blood-pressure.js"></script>
+<script>
+  // Navigare ierarhica: back -> home.html
+  history.pushState({ page: 'blood-pressure.html' }, '', location.href);
+  window.addEventListener('popstate', function() {
+    location.replace('home.html');
+  });
+</script>
 </body>
 </html>

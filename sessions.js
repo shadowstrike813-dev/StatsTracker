@@ -76,7 +76,7 @@ function renderSessions() {
 
     return `
       <div class="session-card" id="sc-${session.id}">
-        <div class="session-card-head" onclick="toggleSession('${session.id}')">
+        <div class="session-card-head" onclick="${isActive ? `location.href='session-active.html'` : `toggleSession('${session.id}')`}">
           <div>
             <div class="session-card-title">${session.template_name}</div>
             <div class="session-card-meta">
@@ -99,7 +99,7 @@ function renderSessions() {
               </button>
             </div>
             <div style="display:flex;gap:8px;align-items:center;">
-              ${isActive ? `<a href="session-active.html" class="btn-session-nav" style="color:var(--amber);border-color:var(--amber);"><i class="ti ti-arrow-right"></i> Continuă</a>` : ''}
+              ${!isActive ? `<button class="btn-session-nav" onclick="openSessionCharts('${session.id}')"><i class="ti ti-chart-line"></i> Grafice</button>` : ''}
               <button class="btn-del-session" onclick="deleteSession('${session.id}')"><i class="ti ti-trash"></i> Șterge</button>
             </div>
           </div>
@@ -209,6 +209,72 @@ async function deleteSession(id) {
   await DB.deleteSession(id);
   await loadAll();
 }
+
+// ─── Session charts popup ─────────────────────────────────────────────────────
+
+let sessionCharts = [];
+
+async function openSessionCharts(sessionId) {
+  const session = allSessions.find(s => s.id === sessionId);
+  if (!session) return;
+
+  sessionCharts.forEach(c => c.destroy());
+  sessionCharts = [];
+
+  const content = document.getElementById('session-charts-content');
+  content.innerHTML = '';
+
+  for (const exId of (session.exercise_ids || [])) {
+    const ex = allExercises.find(e => e.id === exId);
+    if (!ex) continue;
+
+    const workouts = (await DB.getWorkouts(exId)).sort((a,b) => a.date.localeCompare(b.date)).slice(-10);
+    if (!workouts.length) continue;
+
+    const labels  = workouts.map(w => { const [y,m,d] = w.date.split('-'); return `${d}.${m}.${y}`; });
+    const maxData = workouts.map(w => { const src = w.sets.filter(s => !s.warmup); return src.length ? Math.max(...src.map(s => s.kg)) : Math.max(...w.sets.map(s => s.kg)); });
+
+    const canvasId = `sc-chart-${exId}`;
+    const card = document.createElement('div');
+    card.className = 'chart-card';
+    card.innerHTML = `
+      <div class="chart-card-title">${ex.name}</div>
+      <div class="chart-card-meta">${[ex.muscle_group, ex.equipment].filter(Boolean).join(' · ') || 'Exercițiu'} · Maxim kg</div>
+      <div class="chart-card-wrap"><canvas id="${canvasId}"></canvas></div>
+    `;
+    content.appendChild(card);
+    await new Promise(r => setTimeout(r, 30));
+
+    const c = new Chart(document.getElementById(canvasId), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{ label: 'Maxim kg', data: maxData, borderColor: '#a78bfa', backgroundColor: 'rgba(167,139,250,0.08)', tension: 0.35, pointRadius: 4, pointBackgroundColor: '#a78bfa', pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1e2026', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#7a7d87', bodyColor: '#e8e9ec', padding: 8, cornerRadius: 8 } },
+        scales: {
+          y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#4a4d57', font: { family: 'DM Mono', size: 10 } }, border: { color: 'transparent' } },
+          x: { grid: { display: false }, ticks: { color: '#4a4d57', font: { family: 'DM Mono', size: 10 }, maxRotation: 30 }, border: { color: 'rgba(255,255,255,0.07)' } },
+        },
+      },
+    });
+    sessionCharts.push(c);
+  }
+
+  if (!content.children.length) {
+    content.innerHTML = '<p style="color:var(--text-dim);font-size:13px;font-family:\'DM Mono\',monospace;text-align:center;padding:2rem;">Nicio dată disponibilă.</p>';
+  }
+
+  document.getElementById('session-charts-popup').classList.add('open');
+}
+
+document.getElementById('btn-close-session-charts').addEventListener('click', () => {
+  document.getElementById('session-charts-popup').classList.remove('open');
+  sessionCharts.forEach(c => c.destroy());
+  sessionCharts = [];
+});
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
