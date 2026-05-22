@@ -2,6 +2,7 @@ initNav('blood-pressure');
 
 const INPUT_IDS = ['inp-sys', 'inp-dia', 'inp-puls'];
 let chart = null;
+let axisSet = false;
 
 function getStatus(sys, dia) {
   if (sys < 90 || dia < 60)   return { label: 'Hipotensiune',  cls: 'badge-warn' };
@@ -30,7 +31,7 @@ function flashCard(id) {
 
 function render(entries) {
   const allSorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
-  const sorted = allSorted.slice(-10); // ultimele 10 pentru grafic
+  const sorted = allSorted.slice(-10);
 
   if (allSorted.length) {
     document.getElementById('avg-sys').textContent  = Math.round(allSorted.reduce((s, e) => s + e.sys,  0) / allSorted.length);
@@ -44,7 +45,7 @@ function render(entries) {
   const tbody = document.getElementById('tbl-body');
   const sortedDesc = [...allSorted].reverse();
   if (!sortedDesc.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Nicio înregistrare.</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">Nicio înregistrare.</td></tr>';
   } else {
     tbody.innerHTML = sortedDesc.map(e => {
       const st = getStatus(e.sys, e.dia);
@@ -53,10 +54,9 @@ function render(entries) {
         <td style="color:#4e9eff">${e.sys} mmHg</td>
         <td><span class="badge ${st.cls}">${st.label}</span></td>
         <td><button class="btn-del" onclick="event.stopPropagation(); handleDelete('${e.id}')" title="Șterge">✕</button></td>
-        <td><span class="expand-icon"><i class="ti ti-chevron-right"></i></span></td>
       </tr>
       <tr class="bp-row-body">
-        <td colspan="5">
+        <td colspan="4">
           <div class="bp-detail">
             <div class="bp-detail-item">
               <span class="bp-detail-label">Sistolică</span>
@@ -76,86 +76,87 @@ function render(entries) {
     }).join('');
   }
 
-  if (chart) chart.destroy();
-  if (sorted.length) {
-    const PX_PER_POINT = 52;
-    const H = 200;
-    const scale = window.devicePixelRatio || 1;
+  if (chart) { chart.destroy(); chart = null; }
+  axisSet = false;
 
-    const inner  = document.querySelector('.bp-chart-inner');
-    const canvas = document.getElementById('bpChart');
-    const axisCanvas = document.getElementById('bpChartAxis');
+  if (!sorted.length) return;
 
-    // Latimea totala a graficului — minim cat containerul, maxim cat datele
-    const scroll = document.querySelector('.bp-chart-scroll');
-    const totalW = Math.max(scroll.offsetWidth || 300, sorted.length * PX_PER_POINT);
+  const scale  = window.devicePixelRatio || 1;
+  const H      = 200;
+  const PX_PER = 52;
 
-    inner.style.width  = totalW + 'px';
-    canvas.width       = totalW * scale;
-    canvas.height      = H * scale;
-    canvas.style.width  = totalW + 'px';
-    canvas.style.height = H + 'px';
+  const scroll  = document.getElementById('bpChartScroll');
+  const inner   = document.getElementById('bpChartInner');
+  const canvas  = document.getElementById('bpChart');
+  const axisEl  = document.getElementById('bpChartAxis');
 
-    let axisSet = false;
+  const totalW = Math.max(scroll.offsetWidth || 300, sorted.length * PX_PER);
+  inner.style.width   = totalW + 'px';
+  canvas.style.width  = totalW + 'px';
+  canvas.style.height = H + 'px';
+  canvas.width        = totalW * scale;
+  canvas.height       = H * scale;
 
-    chart = new Chart(canvas, {
-      type: 'line',
-      data: {
-        labels: sorted.map(e => fmtDate(e.date)),
-        datasets: [
-          { label: 'Sistolică',  data: sorted.map(e => e.sys),  borderColor: '#4e9eff', backgroundColor: 'rgba(78,158,255,0.08)', tension: 0.35, pointRadius: 5, pointBackgroundColor: '#4e9eff',  pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false },
-          { label: 'Diastolică', data: sorted.map(e => e.dia),  borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.06)', tension: 0.35, pointRadius: 5, pointBackgroundColor: '#34d399',  pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false, borderDash: [6,3] },
-          { label: 'Puls',       data: sorted.map(e => e.puls), borderColor: '#fbbf24', backgroundColor: 'rgba(251,191,36,0.06)', tension: 0.35, pointRadius: 5, pointBackgroundColor: '#fbbf24',  pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false, borderDash: [2,4] },
-        ],
+  chart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: sorted.map(e => fmtDate(e.date)),
+      datasets: [
+        { label: 'Sistolică',  data: sorted.map(e => e.sys),  borderColor: '#4e9eff', backgroundColor: 'rgba(78,158,255,0.08)', tension: 0.35, pointRadius: 5, pointBackgroundColor: '#4e9eff',  pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false },
+        { label: 'Diastolică', data: sorted.map(e => e.dia),  borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.06)', tension: 0.35, pointRadius: 5, pointBackgroundColor: '#34d399',  pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false, borderDash: [6,3] },
+        { label: 'Puls',       data: sorted.map(e => e.puls), borderColor: '#fbbf24', backgroundColor: 'rgba(251,191,36,0.06)', tension: 0.35, pointRadius: 5, pointBackgroundColor: '#fbbf24',  pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false, borderDash: [2,4] },
+      ],
+    },
+    options: {
+      responsive: false,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor: '#1e2026', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#7a7d87', bodyColor: '#e8e9ec', padding: 10, cornerRadius: 8 },
       },
-      options: {
-        responsive: false,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: { backgroundColor: '#1e2026', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#7a7d87', bodyColor: '#e8e9ec', padding: 10, cornerRadius: 8 },
+      scales: {
+        y: { min: 50, max: 170, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#4a4d57', font: { family: 'DM Mono', size: 11 } }, border: { color: 'transparent' } },
+        x: { grid: { display: false }, ticks: { color: '#4a4d57', font: { family: 'DM Mono', size: 11 }, maxRotation: 30, autoSkip: false }, border: { color: 'rgba(255,255,255,0.07)' } },
+      },
+      animation: {
+        onComplete: function() {
+          if (axisSet) return;
+          axisSet = true;
+
+          const yAxis   = chart.scales['y'];
+          const copyW   = yAxis.width;
+          const copyH   = yAxis.height + yAxis.top + 10;
+          const srcCanvas = chart.canvas;
+
+          const targetCtx = axisEl.getContext('2d');
+          axisEl.width        = copyW * scale;
+          axisEl.height       = copyH * scale;
+          axisEl.style.width  = copyW + 'px';
+          axisEl.style.height = copyH + 'px';
+
+          targetCtx.drawImage(srcCanvas,
+            0, 0, copyW * scale, copyH * scale,
+            0, 0, copyW * scale, copyH * scale
+          );
+
+          // Sterge axa Y din canvas-ul principal
+          const srcCtx = srcCanvas.getContext('2d');
+          srcCtx.clearRect(0, 0, copyW * scale, copyH * scale);
         },
-        scales: {
-          y: { min: 50, max: 170, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#4a4d57', font: { family: 'DM Mono', size: 11 } }, border: { color: 'transparent' } },
-          x: { grid: { display: false }, ticks: { color: '#4a4d57', font: { family: 'DM Mono', size: 11 }, maxRotation: 30, autoSkip: false }, border: { color: 'rgba(255,255,255,0.07)' } },
-        },
-        animation: {
-          onComplete: function() {
-            if (axisSet) return;
-            axisSet = true;
-
-            const yAxis     = chart.scales['y'];
-            const copyW     = yAxis.width;
-            const copyH     = yAxis.height + yAxis.top + 10;
-            const srcCanvas = chart.canvas;
-
-            // Copiaza axa Y pe canvas-ul fix
-            const targetCtx = axisCanvas.getContext('2d');
-            targetCtx.canvas.width  = copyW * scale;
-            targetCtx.canvas.height = copyH * scale;
-            targetCtx.canvas.style.width  = copyW + 'px';
-            targetCtx.canvas.style.height = copyH + 'px';
-            targetCtx.drawImage(srcCanvas, 0, 0, copyW * scale, copyH * scale, 0, 0, copyW * scale, copyH * scale);
-
-            // Sterge axa Y din canvas-ul principal
-            const srcCtx = srcCanvas.getContext('2d');
-            srcCtx.clearRect(0, 0, copyW * scale, copyH * scale);
-          },
-          onProgress: function() {
-            if (!axisSet) return;
-            const yAxis  = chart.scales['y'];
-            const copyW  = yAxis.width;
-            const copyH  = yAxis.height + yAxis.top + 10;
-            const srcCtx = chart.canvas.getContext('2d');
-            srcCtx.clearRect(0, 0, copyW * scale, copyH * scale);
-          },
+        onProgress: function() {
+          if (!axisSet) return;
+          const yAxis  = chart.scales['y'];
+          const copyW  = yAxis.width;
+          const copyH  = yAxis.height + yAxis.top + 10;
+          const srcCtx = chart.canvas.getContext('2d');
+          srcCtx.clearRect(0, 0, copyW * scale, copyH * scale);
         },
       },
-    });
+    },
+  });
 
-    // Scroll la cel mai recent
-    scroll.scrollLeft = scroll.scrollWidth;
-  }
+  // Scroll la cel mai recent
+  scroll.scrollLeft = scroll.scrollWidth;
 }
 
 async function loadAndRender() {
@@ -172,6 +173,35 @@ async function handleAdd() {
   setError('');
   if (!date || isNaN(sys) || isNaN(dia) || isNaN(puls)) { setError('! Completează toate câmpurile.'); return; }
   if (sys < 60 || sys > 250 || dia < 40 || dia > 160)   { setError('! Valori în afara intervalului.'); return; }
+
+  const existing = await DB.getEntries();
+  const sameDay  = existing.filter(e => e.date === date);
+
+  if (sameDay.length > 0) {
+    showDuplicateDialog(
+      async () => {
+        setLoading(true);
+        try {
+          for (const e of sameDay) await DB.deleteEntry(e.id);
+          await DB.addEntry({ date, sys, dia, puls });
+          ['inp-sys', 'inp-dia', 'inp-puls'].forEach(id => document.getElementById(id).value = '');
+          await loadAndRender();
+        } catch (err) { setError('! Eroare la salvare.'); }
+        finally { setLoading(false); }
+      },
+      async () => {
+        setLoading(true);
+        try {
+          await DB.addEntry({ date, sys, dia, puls });
+          ['inp-sys', 'inp-dia', 'inp-puls'].forEach(id => document.getElementById(id).value = '');
+          await loadAndRender();
+        } catch (err) { setError('! Eroare la salvare.'); }
+        finally { setLoading(false); }
+      }
+    );
+    return;
+  }
+
   setLoading(true);
   try {
     await DB.addEntry({ date, sys, dia, puls });
@@ -189,6 +219,29 @@ async function handleDelete(id) {
   } catch (err) { setError('! Eroare la ștergere.'); }
 }
 
+function showDuplicateDialog(onReplace, onAdd) {
+  const existing = document.getElementById('dup-dialog');
+  if (existing) existing.remove();
+  const dialog = document.createElement('div');
+  dialog.id = 'dup-dialog';
+  dialog.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;display:flex;align-items:center;justify-content:center;padding:1rem;`;
+  dialog.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:1.5rem;max-width:360px;width:100%;">
+      <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Măsurătoare existentă</div>
+      <div style="font-size:13px;color:var(--text-muted);font-family:'DM Mono',monospace;margin-bottom:1.25rem;line-height:1.5;">Există deja o înregistrare pentru această dată.<br>Ce dorești să faci?</div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button id="dup-cancel" style="background:none;border:1px solid var(--border2);border-radius:var(--radius);padding:8px 14px;color:var(--text-muted);font-family:'Syne',sans-serif;font-size:13px;cursor:pointer;">Anulează</button>
+        <button id="dup-add" style="background:var(--surface3);border:1px solid var(--border2);border-radius:var(--radius);padding:8px 14px;color:var(--text);font-family:'Syne',sans-serif;font-size:13px;cursor:pointer;font-weight:600;">Adaugă nouă</button>
+        <button id="dup-replace" style="background:var(--blue);border:none;border-radius:var(--radius);padding:8px 14px;color:#000;font-family:'Syne',sans-serif;font-size:13px;cursor:pointer;font-weight:600;">Înlocuiește</button>
+      </div>
+    </div>`;
+  document.body.appendChild(dialog);
+  document.getElementById('dup-cancel').onclick  = () => dialog.remove();
+  document.getElementById('dup-add').onclick     = () => { dialog.remove(); onAdd(); };
+  document.getElementById('dup-replace').onclick = () => { dialog.remove(); onReplace(); };
+  dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.remove(); });
+}
+
 INPUT_IDS.forEach((id, idx) => {
   document.getElementById(id).addEventListener('keydown', (e) => {
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); const n = INPUT_IDS[idx+1]; if (n) document.getElementById(n).focus(); }
@@ -204,10 +257,8 @@ loadAndRender();
 function toggleBpRow(head) {
   const body = head.nextElementSibling;
   const isOpen = body.classList.contains('open');
-  // Inchide toate celelalte
   document.querySelectorAll('.bp-row-body.open').forEach(el => el.classList.remove('open'));
   document.querySelectorAll('.bp-row-head.expanded').forEach(el => el.classList.remove('expanded'));
-  // Toggle curent
   if (!isOpen) {
     body.classList.add('open');
     head.classList.add('expanded');

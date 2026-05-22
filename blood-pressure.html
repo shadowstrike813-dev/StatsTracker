@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="style.css" />
 
 <style>
+  /* ─── Accordion rows ─── */
   .bp-row-head { cursor: pointer; user-select: none; }
   .bp-row-head:hover td { background: var(--surface2); }
   .bp-row-head td { border-bottom: none !important; }
@@ -46,12 +47,12 @@
   .bp-row-head.expanded .expand-icon { transform: rotate(90deg); }
 
   /* ─── Scrollable chart ─── */
-  .bp-chart-wrapper {
+  .chartWrapper {
     position: relative;
     height: 200px;
   }
 
-  .bp-chart-wrapper > canvas {
+  .chartWrapper > canvas#bpChartAxis {
     position: absolute;
     left: 0;
     top: 0;
@@ -59,7 +60,7 @@
     z-index: 2;
   }
 
-  .bp-chart-scroll {
+  .chartAreaWrapper {
     height: 200px;
     overflow-x: auto;
     overflow-y: hidden;
@@ -67,10 +68,11 @@
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
-  .bp-chart-scroll::-webkit-scrollbar { display: none; }
+  .chartAreaWrapper::-webkit-scrollbar { display: none; }
 
-  .bp-chart-inner {
+  .chartAreaWrapper2 {
     height: 200px;
+    position: relative;
   }
 </style>
 
@@ -128,10 +130,10 @@
           <span><span class="leg-dot" style="background:#fbbf24"></span>Puls</span>
         </div>
       </div>
-      <div class="bp-chart-wrapper">
-        <div class="bp-chart-scroll">
-          <div class="bp-chart-inner">
-            <canvas id="bpChart" height="200" aria-label="Grafic evoluție tensiune arterială"></canvas>
+      <div class="chartWrapper">
+        <div class="chartAreaWrapper" id="bpChartScroll">
+          <div class="chartAreaWrapper2" id="bpChartInner">
+            <canvas id="bpChart" height="200"></canvas>
           </div>
         </div>
         <canvas id="bpChartAxis" height="200"></canvas>
@@ -143,7 +145,7 @@
       <table>
         <thead>
           <tr>
-            <th>Data</th><th>Sistolică</th><th>Status</th><th></th><th></th>
+            <th>Data</th><th>Sistolică</th><th>Status</th><th></th>
           </tr>
         </thead>
         <tbody id="tbl-body"></tbody>
@@ -156,12 +158,5 @@
 <script src="db.js"></script>
 <script src="nav.js"></script>
 <script src="blood-pressure.js"></script>
-<script>
-  // Navigare ierarhica: back -> home.html
-  history.pushState({ page: 'blood-pressure.html' }, '', location.href);
-  window.addEventListener('popstate', function() {
-    location.replace('home.html');
-  });
-</script>
 </body>
 </html>
