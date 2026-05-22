@@ -11,7 +11,6 @@
 <link rel="stylesheet" href="style.css" />
 
 <style>
-  /* ─── Accordion rows ─── */
   .bp-row-head { cursor: pointer; user-select: none; }
   .bp-row-head:hover td { background: var(--surface2); }
   .bp-row-head td { border-bottom: none !important; }
@@ -45,6 +44,34 @@
     display: inline-block;
   }
   .bp-row-head.expanded .expand-icon { transform: rotate(90deg); }
+
+  /* ─── Scrollable chart ─── */
+  .bp-chart-wrapper {
+    position: relative;
+    height: 200px;
+  }
+
+  .bp-chart-wrapper > canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .bp-chart-scroll {
+    height: 200px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .bp-chart-scroll::-webkit-scrollbar { display: none; }
+
+  .bp-chart-inner {
+    height: 200px;
+  }
 </style>
 
 <link rel="manifest" href="manifest.json" />
@@ -101,8 +128,13 @@
           <span><span class="leg-dot" style="background:#fbbf24"></span>Puls</span>
         </div>
       </div>
-      <div class="chart-wrap">
-        <canvas id="bpChart" aria-label="Grafic evoluție tensiune arterială"></canvas>
+      <div class="bp-chart-wrapper">
+        <div class="bp-chart-scroll">
+          <div class="bp-chart-inner">
+            <canvas id="bpChart" height="200" aria-label="Grafic evoluție tensiune arterială"></canvas>
+          </div>
+        </div>
+        <canvas id="bpChartAxis" height="200"></canvas>
       </div>
     </div>
 
