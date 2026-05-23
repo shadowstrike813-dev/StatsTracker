@@ -2,6 +2,36 @@ initNav('blood-pressure');
 
 const INPUT_IDS = ['inp-sys', 'inp-dia', 'inp-puls'];
 let chart = null;
+let axisDrawn = false;
+
+function copyYAxis() {
+  const scale        = window.devicePixelRatio || 1;
+  const sourceCanvas = chart.canvas;
+  const yScale       = chart.scales['y'];
+  const copyW        = Math.ceil(yScale.left);
+  const copyH        = Math.ceil(sourceCanvas.height / scale);
+
+  const axisCanvas = document.getElementById('bpChart-axis');
+  axisCanvas.style.width  = copyW + 'px';
+  axisCanvas.style.height = copyH + 'px';
+  axisCanvas.width  = copyW * scale;
+  axisCanvas.height = copyH * scale;
+
+  const axisCtx = axisCanvas.getContext('2d');
+  axisCtx.scale(scale, scale);
+  axisCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#16181c';
+  axisCtx.fillRect(0, 0, copyW, copyH);
+  axisCtx.drawImage(sourceCanvas, 0, 0, copyW * scale, sourceCanvas.height, 0, 0, copyW, copyH);
+
+  clearYAxisFromMain();
+}
+
+function clearYAxisFromMain() {
+  const yScale = chart.scales['y'];
+  const clearW = Math.ceil(yScale.left);
+  const srcCtx = chart.canvas.getContext('2d');
+  srcCtx.clearRect(0, 0, clearW, chart.canvas.height);
+}
 
 function getStatus(sys, dia) {
   if (sys < 90 || dia < 60)   return { label: 'Hipotensiune',  cls: 'badge-warn' };
@@ -30,7 +60,7 @@ function flashCard(id) {
 
 function render(entries) {
   const allSorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
-  const sorted = allSorted.slice(-10); // ultimele 10 pentru grafic
+  const sorted = allSorted.slice(-10);
 
   if (allSorted.length) {
     document.getElementById('avg-sys').textContent  = Math.round(allSorted.reduce((s, e) => s + e.sys,  0) / allSorted.length);
@@ -76,19 +106,42 @@ function render(entries) {
   }
 
   if (chart) chart.destroy();
+  axisDrawn = false;
+
   if (sorted.length) {
-    chart = new Chart(document.getElementById('bpChart'), {
+    const PX_PER_POINT = 60;
+    const totalWidth = Math.max(sorted.length * PX_PER_POINT, 400);
+
+    const inner = document.getElementById('chartInner');
+    inner.style.width = totalWidth + 'px';
+
+    const canvas = document.getElementById('bpChart');
+    canvas.width        = totalWidth;
+    canvas.height       = 200;
+    canvas.style.width  = totalWidth + 'px';
+    canvas.style.height = '200px';
+
+    chart = new Chart(canvas, {
       type: 'line',
       data: {
         labels: sorted.map(e => fmtDate(e.date)),
         datasets: [
-          { label: 'Sistolică', data: sorted.map(e => e.sys), borderColor: '#4e9eff', backgroundColor: 'rgba(78,158,255,0.08)', tension: 0.35, pointRadius: 5, pointBackgroundColor: '#4e9eff', pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false },
-          { label: 'Diastolică', data: sorted.map(e => e.dia), borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.06)', tension: 0.35, pointRadius: 5, pointBackgroundColor: '#34d399', pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false, borderDash: [6,3] },
-          { label: 'Puls', data: sorted.map(e => e.puls), borderColor: '#fbbf24', backgroundColor: 'rgba(251,191,36,0.06)', tension: 0.35, pointRadius: 5, pointBackgroundColor: '#fbbf24', pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false, borderDash: [2,4] },
+          { label: 'Sistolică',  data: sorted.map(e => e.sys),  borderColor: '#4e9eff', backgroundColor: 'rgba(78,158,255,0.08)', tension: 0.35, pointRadius: 5, pointBackgroundColor: '#4e9eff',  pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false },
+          { label: 'Diastolică', data: sorted.map(e => e.dia),  borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.06)', tension: 0.35, pointRadius: 5, pointBackgroundColor: '#34d399',  pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false, borderDash: [6,3] },
+          { label: 'Puls',       data: sorted.map(e => e.puls), borderColor: '#fbbf24', backgroundColor: 'rgba(251,191,36,0.06)', tension: 0.35, pointRadius: 5, pointBackgroundColor: '#fbbf24',  pointBorderColor: '#0e0f11', pointBorderWidth: 2, fill: false, borderDash: [2,4] },
         ],
       },
       options: {
-        responsive: true, maintainAspectRatio: false,
+        responsive: false,
+        maintainAspectRatio: false,
+        animation: {
+          onComplete: function() {
+            if (!axisDrawn) { copyYAxis(); axisDrawn = true; }
+          },
+          onProgress: function() {
+            if (axisDrawn) clearYAxisFromMain();
+          },
+        },
         plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1e2026', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#7a7d87', bodyColor: '#e8e9ec', padding: 10, cornerRadius: 8 } },
         scales: {
           y: { min: 50, max: 170, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#4a4d57', font: { family: 'DM Mono', size: 11 } }, border: { color: 'transparent' } },
@@ -145,10 +198,8 @@ loadAndRender();
 function toggleBpRow(head) {
   const body = head.nextElementSibling;
   const isOpen = body.classList.contains('open');
-  // Inchide toate celelalte
   document.querySelectorAll('.bp-row-body.open').forEach(el => el.classList.remove('open'));
   document.querySelectorAll('.bp-row-head.expanded').forEach(el => el.classList.remove('expanded'));
-  // Toggle curent
   if (!isOpen) {
     body.classList.add('open');
     head.classList.add('expanded');

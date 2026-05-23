@@ -45,6 +45,30 @@
     display: inline-block;
   }
   .bp-row-head.expanded .expand-icon { transform: rotate(90deg); }
+
+  /* ─── Scrollable chart ─── */
+  .chart-wrap {
+    position: relative;
+    height: 200px;
+    display: flex;
+  }
+  #bpChart-axis {
+    display: block;
+    flex-shrink: 0;
+  }
+  .chart-scroll-area {
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .chart-scroll-area::-webkit-scrollbar { display: none; }
+  .chart-inner {
+    height: 200px;
+    position: relative;
+  }
+  #bpChart { display: block; }
 </style>
 
 <link rel="manifest" href="manifest.json" />
@@ -102,7 +126,12 @@
         </div>
       </div>
       <div class="chart-wrap">
-        <canvas id="bpChart" aria-label="Grafic evoluție tensiune arterială"></canvas>
+        <canvas id="bpChart-axis" aria-hidden="true"></canvas>
+        <div class="chart-scroll-area">
+          <div class="chart-inner" id="chartInner">
+            <canvas id="bpChart" aria-label="Grafic evoluție tensiune arterială"></canvas>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -125,7 +154,6 @@
 <script src="nav.js"></script>
 <script src="blood-pressure.js"></script>
 <script>
-  // Navigare ierarhica: back -> home.html
   history.pushState({ page: 'blood-pressure.html' }, '', location.href);
   window.addEventListener('popstate', function() {
     location.replace('home.html');
